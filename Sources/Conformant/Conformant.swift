@@ -208,7 +208,7 @@ public struct Conformant {
 
     public func declarations() -> [AnySwiftDeclaration] {
         var declarations: [AnySwiftDeclaration] = []
-//        declarations.append(contentsOf: imports().map(AnySwiftDeclaration.init))
+        declarations.append(contentsOf: imports().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: classes().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: structs().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: protocols().map(AnySwiftDeclaration.init))

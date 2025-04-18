@@ -2,8 +2,6 @@
 
 Conformant is a powerful static code analyzer for Swift that enables you to enforce code structure consistency and architectural rules in your Swift projects through automated testing.
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-
 ## Features
 
 - **Code Structure Analysis**: Inspect Swift code elements (classes, structs, protocols, enums, etc.) and verify their properties.
@@ -260,20 +258,160 @@ collection.assertNone { ... }
 
 ## Filtering API
 
-Filter declarations based on various criteria:
+### Overview
+
+The Filtering API provides a collection of extension methods on Swift collections that contain SwiftDeclaration objects. These methods allow you to chain filters together to precisely target specific declarations in your codebase.
+
+## Available Filters
+
+### Name-based Filters
+
+| Method | Description |
+|--------|-------------|
+| `withName(_:)` | Exact name match |
+| `withNames(_:)` | Match any name in the provided array |
+| `withNamePrefix(_:)` | Prefix match |
+| `withNameSuffix(_:)` | Suffix match |
+| `withNameContaining(_:)` | Contains substring |
+| `withNameMatching(_:)` | Regex pattern match |
+
+### Modifier Filters
+
+| Method | Description |
+|--------|-------------|
+| `withModifier(_:)` | Has specific modifier |
+| `withAnyModifier(_:)` | Has any of the specified modifiers |
+| `withAllModifiers(_:)` | Has all specified modifiers |
+| `withoutModifier(_:)` | Doesn't have a specific modifier |
+| `withoutAnyModifier(_:)` | Doesn't have any of the specified modifiers |
+
+### Annotation Filters
+
+| Method | Description |
+|--------|-------------|
+| `withAnnotation(named:)` | Has specific annotation |
+| `withAnyAnnotation(named:)` | Has any of the specified annotations |
+| `withAllAnnotations(named:)` | Has all specified annotations |
+| `withoutAnnotation(named:)` | Doesn't have a specific annotation |
+
+### Location Filters
+
+| Method | Description |
+|--------|-------------|
+| `inFile(_:)` | In specific file |
+| `inFilePathContaining(_:)` | In file with path containing substring |
+| `inPackage(_:)` | In specific package |
+
+### Dependency Filters
+
+| Method | Description |
+|--------|-------------|
+| `dependingOn(type:)` | Depends on specific type |
+| `dependingOnModule(_:)` | Depends on specific module |
+| `havingDependencies()` | Has any dependencies |
+
+### Type-specific Filters
+
+#### Classes
 
 ```swift
-// Filter by name suffix
-scope.classes().filter { $0.name.hasSuffix("ViewController") }
+// Get classes that extend UIViewController
+let viewControllers = scope.classes().extending(class: "UIViewController")
 
-// Filter by name regex pattern
-scope.declarations().withNameMatching(".*Service$")
+// Get classes that have a specific method
+let classesWithInit = scope.classes().havingMethod(named: "init")
 
-// Filter by annotation
-scope.classes().withAnnotation(named: "available")
+// Get non-final classes
+let subclassableClasses = scope.classes().subclassable()
+```
 
-// Filter by modifier
-scope.declarations().withModifier(.public)
+#### Structs
+
+```swift
+// Get structs that implement Hashable
+let hashableStructs = scope.structs().implementing(protocol: "Hashable")
+
+// Get structs with a specific property
+let structs = scope.structs().havingProperty(named: "id")
+```
+
+#### Protocols
+
+```swift
+// Get protocols that inherit from Equatable
+let protocols = scope.protocols().inheriting(protocol: "Equatable")
+
+// Get protocols that require a specific method
+let protocols = scope.protocols().requiringMethod(named: "isEqual")
+```
+
+#### Functions
+
+```swift
+// Get functions that return Bool
+let boolFunctions = scope.functions().returningType("Bool")
+
+// Get functions with a specific parameter
+let idFunctions = scope.functions().havingParameter(named: "id")
+
+// Get async functions
+let asyncFunctions = scope.functions().async()
+```
+
+#### Properties
+
+```swift
+// Get computed properties
+let computedProps = scope.properties().computed()
+
+// Get properties of a specific type
+let stringProps = scope.properties().ofType("String")
+```
+
+#### Enums
+
+```swift
+// Get enums with associated values
+let enumsWithAssocValues = scope.enums().withAssociatedValues()
+
+// Get enums with a specific raw type
+let stringEnums = scope.enums().withRawType("String")
+```
+
+#### Imports
+
+```swift
+// Get imports from Apple frameworks
+let appleImports = scope.imports().fromAppleFrameworks()
+
+// Get imports with submodules
+let submoduleImports = scope.imports().withSubmodules()
+```
+
+## Combining Filters
+
+You can chain multiple filters together to create complex queries:
+
+```swift
+// Get all public classes that inherit from UIViewController and implement Codable
+let classes = scope.classes()
+    .withModifier(.public)
+    .extending(class: "UIViewController")
+    .implementing(protocol: "Codable")
+```
+
+## Custom Filtering
+
+If you need more advanced filtering, you can use the `matching(_:)` or `and(_:)` methods to provide a custom predicate:
+
+```swift
+// Get classes with more than 5 methods
+let largeClasses = scope.classes().matching { $0.methods.count > 5 }
+
+// Apply a custom filter to an existing filtered collection
+let result = scope.classes().withModifier(.public).and { 
+    $0.name.count > 10 && $0.methods.count > 3
+}
 ```
 
 ## Working with Imports
@@ -366,7 +504,3 @@ func generateArchitectureReport() {
     }
 }
 ```
-
-## License
-
-Conformant is available under the Apache License 2.0. See the [LICENSE](LICENSE) file for more info.
