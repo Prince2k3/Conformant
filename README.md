@@ -1,6 +1,6 @@
 # Conformant
 
-Conformant is a powerful static code analyzer for Swift that enables you to enforce code structure consistency and architectural rules in your Swift projects through automated testing. Heavily inspired by [Konsist](https://docs.konsist.lemonappdev.com) and [ArchUnit](https://www.archunit.org/userguide/html/000_Index.html#_freezing_arch_rules)
+Conformant is a tool that leverages Swift’s [swift-syntax](https://github.com/swiftlang/swift-syntax) to automate testing and enforce code structure consistency and architectural rules in your Swift projects.  Heavily inspired by [Konsist](https://docs.konsist.lemonappdev.com) and [ArchUnit](https://www.archunit.org/userguide/html/000_Index.html#_freezing_arch_rules)
 
 ## Features
 
