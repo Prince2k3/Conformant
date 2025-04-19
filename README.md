@@ -442,27 +442,6 @@ let inheritanceDeps = dependencies.filter { $0.kind == .inheritance }
 let importDeps = dependencies.filter { $0.kind == .import }
 ```
 
-## Freezing Architecture Rules
-
-Enable gradual architectural improvement in legacy codebases:
-
-```swift
-// Freeze a single rule
-let rule = domain.dependsOnNothing()
-let frozenRule = rule.freeze(toFile: "violations/domain_violations.json")
-
-// Use a custom matcher for more control
-let customMatcher = CustomViolationMatcher()
-let frozenWithCustomMatcher = rule.freeze(using: fileStore, matching: customMatcher)
-
-// Create a custom violation store
-class DatabaseViolationStore: ViolationStore {
-    // Implementation that uses a database instead of files
-}
-let dbStore = DatabaseViolationStore(connectionString: "...")
-let frozenWithCustomStore = rule.freeze(using: dbStore)
-```
-
 ## Architecture Progress Reports
 
 Generate reports to track your architectural improvement:
