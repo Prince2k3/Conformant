@@ -205,13 +205,22 @@ class ImportTests: XCTestCase {
 
 ## Defining Layers
 
-Conformant provides multiple ways to define architectural layers:
-
-### By Directory Path
+Layers in Conformant represent logical sections of your architecture. Here are different ways to define layers:
 
 ```swift
-// Layer containing files in the "Domain" directory
-let domain = Layer(name: "Domain", directory: "Domain")
+// Define a layer based on Swift package targets
+let domainLayer = Layer(name: "Domain", packageTarget: "MyAppDomain")
+
+// Define a layer with multiple package targets
+let uiLayer = Layer(name: "UI", packageTargets: ["MyAppUI", "MyAppComponents"])
+
+// Define a layer using a directory pattern
+let utilsLayer = Layer(name: "Utils", directory: "Utilities")
+
+// Define a layer with a custom predicate
+let networkLayer = Layer(name: "Network", predicate: { decl in
+    decl.name.hasSuffix("Client") || decl.name.hasSuffix("Service")
+})
 ```
 
 ### By Module Name
