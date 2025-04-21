@@ -9,10 +9,12 @@ public struct Layer {
     // Used for import-based dependency checking
     private let modulesInLayer: Set<String>
 
+    @MainActor private static var packageCache: [String: Package] = [:]
+
     /// Initialize a Layer with a name and a regex pattern to match file paths
     public init(name: String, identifierPattern: String) {
         self.name = name
-        self.modulesInLayer = [] // No specific modules defined
+        self.modulesInLayer = []
         self.resideIn = { declaration in
             let filePath = declaration.filePath
             let regexPattern = identifierPattern.replacingOccurrences(of: "..", with: ".*")
@@ -43,46 +45,39 @@ public struct Layer {
             let pattern1 = "/\(targetDir)/"
 
             return declPath.contains(pattern1)
-
-            // Alternative/More Robust (might be needed if paths are tricky):
-            // Use URL path components
-            // let declURL = URL(fileURLWithPath: declaration.filePath)
-            // return declURL.pathComponents.contains(targetDir)
         }
     }
 
-    /// Initialize a Layer with a name and a module name
-    public init(name: String, module: String) {
+    /// Initialize a Layer with a name and a Swift package target
+    @MainActor
+    public init(name: String, packageTarget: String, fileManager: FileManager = .default) {
         self.name = name
-        self.modulesInLayer = [module]
+        self.modulesInLayer = [packageTarget]
         self.resideIn = { declaration in
-            // Use URL path components for more robust checking
-            let components = URL(fileURLWithPath: declaration.filePath).pathComponents
-            let result = components.contains(module) // Check if module name exists as a path component
-             print("DEBUG resideIn(Module): Layer='\(name)' Module='\(module)' DeclPath='\(declaration.filePath)' Components='\(components)' Contains=\(result)")
-            return result
+            return Layer.declarationBelongsToPackageTarget(declaration, targetName: packageTarget, fileManager: fileManager)
         }
     }
 
-    /// Initialize a Layer with a name and multiple module names
-    public init(name: String, modules: [String]) {
-         self.name = name
-         self.modulesInLayer = Set(modules)
-         self.resideIn = { declaration in
-             let components = URL(fileURLWithPath: declaration.filePath).pathComponents
-             // Check if any specified module name exists as a path component
-             let result = modules.contains { module in
-                 components.contains(module)
-             }
-             print("DEBUG resideIn(Modules): Layer='\(name)' Modules='\(modules)' DeclPath='\(declaration.filePath)' Components='\(components)' Contains=\(result)")
-             return result
-         }
-     }
+    /// Initialize a Layer with a name and multiple Swift package targets
+    @MainActor
+    public init(name: String, packageTargets: [String], fileManager: FileManager = .default) {
+        self.name = name
+        self.modulesInLayer = Set(packageTargets)
+        self.resideIn = { declaration in
+            // Check if the declaration belongs to any of the specified targets
+            for target in packageTargets {
+                if Layer.declarationBelongsToPackageTarget(declaration, targetName: target, fileManager: fileManager) {
+                    return true
+                }
+            }
+            return false
+        }
+    }
 
     /// Initialize a Layer with a name and a custom predicate
     public init(name: String, predicate: @escaping (any SwiftDeclaration) -> Bool) {
         self.name = name
-        self.modulesInLayer = [] // No specific modules defined
+        self.modulesInLayer = []
         self.resideIn = predicate
     }
 
@@ -91,6 +86,106 @@ public struct Layer {
         self.name = name
         self.modulesInLayer = Set(modules)
         self.resideIn = predicate
+    }
+
+    /// Helper method to determine if a declaration belongs to a specific package target
+    @MainActor private static func declarationBelongsToPackageTarget(_ declaration: any SwiftDeclaration, targetName: String, fileManager: FileManager = .default) -> Bool {
+        let packageSwiftPath = findNearestPackageSwift(from: declaration.filePath, fileManager: fileManager)
+        guard let packageSwiftPath = packageSwiftPath else {
+            return false
+        }
+
+        let package: Package
+
+        if let cachedPackage = packageCache[packageSwiftPath] {
+            package = cachedPackage
+        } else {
+            do {
+                guard let data = fileManager.contents(atPath: packageSwiftPath),
+                      let content = String(data: data, encoding: .utf8) else {
+                    return false
+                }
+                let parser = PackageSwiftParser(content: content)
+                let parsedPackage = try parser.parse()
+                packageCache[packageSwiftPath] = parsedPackage
+                package = parsedPackage
+            } catch {
+                print("Error parsing Package.swift at \(packageSwiftPath): \(error)")
+                return false
+            }
+        }
+
+        guard let target = package.targets.first(where: { $0.name == targetName }) else {
+            return false
+        }
+
+        let packageDirPath = (packageSwiftPath as NSString).deletingLastPathComponent
+        let normalizedDeclPath = declaration.filePath.replacingOccurrences(of: "\\", with: "/")
+
+        // Try multiple path patterns to account for different project structures
+
+        if let targetPath = target.path {
+            let targetFullPath = (packageDirPath as NSString).appendingPathComponent(targetPath)
+                .replacingOccurrences(of: "\\", with: "/")
+
+            if normalizedDeclPath.hasPrefix(targetFullPath) ||
+               normalizedDeclPath.contains("/\(targetPath)/") {
+                return true
+            }
+        }
+
+        let defaultTargetPath = (packageDirPath as NSString)
+            .appendingPathComponent("Sources/\(targetName)")
+            .replacingOccurrences(of: "\\", with: "/")
+
+        if normalizedDeclPath.hasPrefix(defaultTargetPath) ||
+           normalizedDeclPath.contains("/Sources/\(targetName)/") {
+            return true
+        }
+
+        if normalizedDeclPath.contains("/\(targetName)/") {
+            return true
+        }
+
+        for excludePath in target.exclude {
+            let fullExcludePath = target.path != nil
+            ? (packageDirPath as NSString).appendingPathComponent("\(target.path!)/\(excludePath)")
+            : (packageDirPath as NSString).appendingPathComponent("Sources/\(targetName)/\(excludePath)")
+
+            if normalizedDeclPath.hasPrefix(fullExcludePath) {
+                return false
+            }
+        }
+
+        if !target.sources.isEmpty {
+            let inSpecifiedSources = target.sources.contains { sourcePath in
+                let fullSourcePath = target.path != nil
+                ? (packageDirPath as NSString).appendingPathComponent("\(target.path!)/\(sourcePath)")
+                : (packageDirPath as NSString).appendingPathComponent("Sources/\(targetName)/\(sourcePath)")
+
+                return normalizedDeclPath.hasPrefix(fullSourcePath)
+            }
+
+            return inSpecifiedSources
+        }
+
+        return false
+    }
+
+    /// Find the nearest Package.swift file by traversing up the directory tree
+    private static func findNearestPackageSwift(from filePath: String, fileManager: FileManager = .default) -> String? {
+        var currentDir = (filePath as NSString).deletingLastPathComponent
+        var checkedDirs = Set<String>()
+
+        while !currentDir.isEmpty && currentDir != "/" && !checkedDirs.contains(currentDir) {
+            checkedDirs.insert(currentDir)
+            let packagePath = (currentDir as NSString).appendingPathComponent("Package.swift")
+            if fileManager.fileExists(atPath: packagePath) {
+                return packagePath
+            }
+            currentDir = (currentDir as NSString).deletingLastPathComponent
+        }
+        return nil
     }
 
     /// Check if a dependency points to this layer based on module imports
