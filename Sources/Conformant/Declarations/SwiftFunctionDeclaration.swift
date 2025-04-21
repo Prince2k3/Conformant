@@ -11,6 +11,22 @@ public class SwiftFunctionDeclaration: SwiftDeclaration {
     public let parameters: [SwiftParameterDeclaration]
     public let returnType: String?
     public let body: String?  // Function body as a string
+    public let isAsync: Bool
+    public let isThrowing: Bool
+    public let effectSpecifiers: FunctionEffectSpecifiers
+
+    /// Represents the effect specifiers of a function (async, throws, etc.)
+    public struct FunctionEffectSpecifiers {
+        public let isAsync: Bool
+        public let isThrowing: Bool
+        public let isRethrows: Bool
+
+        public init(isAsync: Bool = false, isThrowing: Bool = false, isRethrows: Bool = false) {
+            self.isAsync = isAsync
+            self.isThrowing = isThrowing
+            self.isRethrows = isRethrows
+        }
+    }
 
     init(
         name: String,
@@ -21,7 +37,8 @@ public class SwiftFunctionDeclaration: SwiftDeclaration {
         location: SourceLocation,
         parameters: [SwiftParameterDeclaration],
         returnType: String?,
-        body: String?
+        body: String?,
+        effectSpecifiers: FunctionEffectSpecifiers = FunctionEffectSpecifiers()
     ) {
         self.name = name
         self.modifiers = modifiers
@@ -32,6 +49,9 @@ public class SwiftFunctionDeclaration: SwiftDeclaration {
         self.parameters = parameters
         self.returnType = returnType
         self.body = body
+        self.isAsync = effectSpecifiers.isAsync
+        self.isThrowing = effectSpecifiers.isThrowing || effectSpecifiers.isRethrows
+        self.effectSpecifiers = effectSpecifiers
     }
 
     public func hasParameter(named name: String) -> Bool {
@@ -40,5 +60,10 @@ public class SwiftFunctionDeclaration: SwiftDeclaration {
 
     public func hasReturnType() -> Bool {
         return returnType != nil && returnType != "Void" && returnType != "()"
+    }
+
+    /// Returns true if the function uses 'rethrows' instead of 'throws'
+    public func isRethrowing() -> Bool {
+        return effectSpecifiers.isRethrows
     }
 }

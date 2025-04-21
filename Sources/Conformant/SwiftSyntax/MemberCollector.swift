@@ -36,6 +36,17 @@ class MemberCollector: SyntaxVisitor {
         let returnType: String? = nil
         let body = node.body?.trimmedDescription
 
+        // Extract effect specifiers from initializer
+        let isAsync = node.signature.effectSpecifiers?.asyncSpecifier != nil
+        let isThrows = node.signature.effectSpecifiers?.throwsSpecifier != nil
+        let isRethrows = node.signature.effectSpecifiers?.throwsSpecifier?.text == "rethrows"
+
+        let effectSpecifiers = SwiftFunctionDeclaration.FunctionEffectSpecifiers(
+            isAsync: isAsync,
+            isThrowing: isThrows && !isRethrows,
+            isRethrows: isRethrows
+        )
+
         parameterList.forEach { param in
             let typeSyntax = Syntax(param.type)
             let typeName = typeSyntax.trimmedDescription
@@ -57,7 +68,8 @@ class MemberCollector: SyntaxVisitor {
             location: location,
             parameters: parameters,
             returnType: returnType,
-            body: body
+            body: body,
+            effectSpecifiers: effectSpecifiers
         )
 
         methods.append(initDecl)
@@ -76,6 +88,7 @@ class MemberCollector: SyntaxVisitor {
         let parameters = extractParameters(from: parameterList)
         let returnType = node.signature.returnClause?.type.trimmedDescription
         let body = node.body?.trimmedDescription
+        let effectSpecifiers = extractEffectSpecifiers(from: node.signature)
 
         parameterList.forEach { param in
             let typeSyntax = Syntax(param.type)
@@ -107,7 +120,8 @@ class MemberCollector: SyntaxVisitor {
             location: location,
             parameters: parameters,
             returnType: returnType,
-            body: body
+            body: body,
+            effectSpecifiers: effectSpecifiers
         )
         methods.append(functionDecl)
         return .skipChildren

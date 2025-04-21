@@ -4,44 +4,596 @@ import SwiftSyntax
 import SwiftParser
 
 final class FilteringAPITests: XCTestCase {
-    
-    // Test files directory
-    var testFilesDirectory: String!
-    
-    // Setup - create test files with various Swift declarations
-    override func setUp() {
-        super.setUp()
+    func testNameFiltering() {
+        let testFilesDirectory = makeSUT()
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
+        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+
+        // Test withNameSuffix
+        let viewControllers: [SwiftClassDeclaration] = scope.classes().withNameSuffix("ViewController")
+        XCTAssertEqual(viewControllers.count, 2, "Should find 2 view controller classes")
+        XCTAssertTrue(viewControllers.contains { $0.name == "BaseViewController" }, "Should find BaseViewController")
+        XCTAssertTrue(viewControllers.contains { $0.name == "HomeViewController" }, "Should find HomeViewController")
         
-        // Create a temporary directory for test files
-        testFilesDirectory = NSTemporaryDirectory() + "FilteringAPITests_" + UUID().uuidString
+        // Test withNamePrefix
+        let networkClasses = scope.declarations().withNamePrefix("Network")
+        XCTAssertEqual(networkClasses.count, 4, "Should find 4 Network* declarations")
+        XCTAssertTrue(networkClasses.contains { $0.name == "NetworkService" }, "Should find NetworkService")
+        XCTAssertTrue(networkClasses.contains { $0.name == "NetworkConfiguration" }, "Should find NetworkConfiguration")
+        XCTAssertTrue(networkClasses.contains { $0.name == "NetworkError" }, "Should find NetworkError")
+        XCTAssertTrue(networkClasses.contains { $0.name == "NetworkManager" }, "Should find NetworkManager")
+
+        // Test withNameContaining
+        let userDeclarations = scope.declarations().withNameContaining("User")
+        XCTAssertEqual(userDeclarations.count, 4, "Should find 4 declarations containing 'User'")
+
+        // Test withName
+        let homeVC = scope.classes().withName("HomeViewController")
+        XCTAssertEqual(homeVC.count, 1, "Should find exactly 1 HomeViewController")
+        XCTAssertEqual(homeVC.first?.name, "HomeViewController", "Should find HomeViewController by exact name")
+        
+        // Test withNames
+        let specificModels = scope.declarations().withNames(["User", "Product"])
+        XCTAssertEqual(specificModels.count, 2, "Should find exactly 2 models")
+        XCTAssertTrue(specificModels.contains { $0.name == "User" }, "Should find User by name")
+        XCTAssertTrue(specificModels.contains { $0.name == "Product" }, "Should find Product by name")
+        
+        // Test withNameMatching
+        let viewModelPattern = scope.declarations().withNameMatching(".*ViewModel")
+        XCTAssertEqual(viewModelPattern.count, 2, "Should find 2 view models")
+        XCTAssertTrue(viewModelPattern.contains { $0.name == "ProductViewModel" }, "Should find ProductViewModel")
+        XCTAssertTrue(viewModelPattern.contains { $0.name == "ViewModel" }, "Should find ViewModel protocol")
+    }
+    
+    // MARK: - Modifier Filtering Tests
+    
+    func testModifierFiltering() {
+        let testFilesDirectory = makeSUT()
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
+        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+
+        // Test withModifier
+        let publicDeclarations = scope.declarations().withModifier(.public)
+        XCTAssertTrue(publicDeclarations.count > 0, "Should find public declarations")
+        
+        let openDeclarations = scope.declarations().withModifier(.open)
+        XCTAssertTrue(openDeclarations.count > 0, "Should find open declarations")
+
+        let finalClasses = scope.classes().withModifier(.final)
+        XCTAssertEqual(finalClasses.count, 1, "Should find 1 final class")
+        XCTAssertEqual(finalClasses.first?.name, "HomeViewController", "The final class should be HomeViewController")
+        
+        // Test withAnyModifier
+        let publicOrOpenDeclarations = scope.declarations().withAnyModifier(.public, .open)
+        XCTAssertTrue(publicOrOpenDeclarations.count > 0, "Should find declarations with either public or private modifier")
+        XCTAssertTrue(publicOrOpenDeclarations.count >= publicDeclarations.count + openDeclarations.count,
+                      "Should find at least as many declarations as public and open combined")
+        
+        // Test withAllModifiers
+        let publicFinalClasses = scope.classes().withAllModifiers(.public, .final)
+        XCTAssertEqual(publicFinalClasses.count, 1, "Should find 1 public final class")
+        XCTAssertEqual(publicFinalClasses.first?.name, "HomeViewController", "The public final class should be HomeViewController")
+        
+        // Test withoutModifier
+        let nonFinalClasses = scope.classes().withoutModifier(.final)
+        XCTAssertTrue(nonFinalClasses.count > 0, "Should find non-final classes")
+        XCTAssertFalse(nonFinalClasses.contains { $0.name == "HomeViewController" }, "HomeViewController should not be in non-final classes")
+        
+        // Test withoutAnyModifier
+        let nonPublicOrPrivateDeclarations = scope.declarations().withoutAnyModifier(.public, .private)
+        XCTAssertTrue(nonPublicOrPrivateDeclarations.count > 0, "Should find declarations with neither public nor private modifier")
+    }
+    
+    // MARK: - Annotation Filtering Tests
+    
+    func testAnnotationFiltering() {
+        let testFilesDirectory = makeSUT()
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
+        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+
+        // Test withAnnotation
+        let availableDeclarations = scope.declarations().withAnnotation(named: "available")
+        XCTAssertEqual(availableDeclarations.count, 1, "Should find 1 declaration with @available")
+        XCTAssertEqual(availableDeclarations.first?.name, "HomeViewController", "HomeViewController should have @available annotation")
+        
+        // Test withAnyAnnotation
+        // Would need more test files with different annotations to properly test
+        
+        // Test withoutAnnotation
+        let nonAvailableDeclarations = scope.declarations().withoutAnnotation(named: "available")
+        XCTAssertTrue(nonAvailableDeclarations.count > 0, "Should find declarations without @available")
+        XCTAssertFalse(nonAvailableDeclarations.contains { $0.name == "HomeViewController" }, 
+                      "HomeViewController should not be in declarations without @available")
+    }
+    
+    // MARK: - Location Filtering Tests
+    
+    func testLocationFiltering() {
+        let testFilesDirectory = makeSUT()
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
+        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+
+        // Test inFile
+        let classesFilePath = testFilesDirectory + "/Classes.swift"
+        let classesFileDeclarations = scope.declarations().inFile(classesFilePath)
+        XCTAssertTrue(classesFileDeclarations.count > 0, "Should find declarations in Classes.swift")
+        XCTAssertTrue(classesFileDeclarations.contains { $0.name == "HomeViewController" }, 
+                     "HomeViewController should be in Classes.swift")
+        
+        // Test inFilePathContaining
+        let enumsDeclarations = scope.declarations().inFilePathContaining("Enums.swift")
+        XCTAssertTrue(enumsDeclarations.count > 0, "Should find declarations in Enums.swift")
+        XCTAssertTrue(enumsDeclarations.contains { $0.name == "NetworkError" }, 
+                     "NetworkError should be in Enums.swift")
+        
+        // Test inPackage - for this example, we'll use directory name as package
+        let functionsPackageDeclarations = scope.declarations().inPackage("Functions")
+        XCTAssertTrue(functionsPackageDeclarations.count > 0, "Should find declarations in Functions package")
+        XCTAssertTrue(functionsPackageDeclarations.contains { $0.name == "formatCurrency" }, 
+                     "formatCurrency should be in Functions package")
+    }
+    
+    // MARK: - Class-Specific Filtering Tests
+    
+    func testClassSpecificFiltering() {
+        let testFilesDirectory = makeSUT()
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
+        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let classes = scope.classes()
+        
+        // Test extending
+        let viewControllerSubclasses = classes.extending(class: "BaseViewController")
+        XCTAssertEqual(viewControllerSubclasses.count, 1, "Should find 1 subclass of BaseViewController")
+        XCTAssertEqual(viewControllerSubclasses.first?.name, "HomeViewController", 
+                      "HomeViewController should extend BaseViewController")
+        
+        // Test implementing
+        // Need class implementing protocol to test properly
+        
+        // Test havingMethod
+        let classesWithViewDidLoad = classes.havingMethod(named: "viewDidLoad")
+        XCTAssertEqual(classesWithViewDidLoad.count, 2, "Should find 2 classes with viewDidLoad method")
+        XCTAssertTrue(classesWithViewDidLoad.contains { $0.name == "BaseViewController" }, 
+                     "BaseViewController should have viewDidLoad method")
+        XCTAssertTrue(classesWithViewDidLoad.contains { $0.name == "HomeViewController" }, 
+                     "HomeViewController should have viewDidLoad method")
+        
+        // Test havingProperty
+        let classesWithLoadingProperty = classes.havingProperty(named: "isLoading")
+        XCTAssertEqual(classesWithLoadingProperty.count, 1, "Should find 1 class with isLoading property")
+        XCTAssertEqual(classesWithLoadingProperty.first?.name, "BaseViewController", 
+                      "BaseViewController should have isLoading property")
+        
+        // Test final
+        let finalClasses = classes.final()
+        XCTAssertEqual(finalClasses.count, 1, "Should find 1 final class")
+        XCTAssertEqual(finalClasses.first?.name, "HomeViewController", "The final class should be HomeViewController")
+        
+        // Test subclassable
+        let subclassableClasses = classes.subclassable()
+        XCTAssertTrue(subclassableClasses.count > 0, "Should find subclassable classes")
+        XCTAssertTrue(subclassableClasses.contains { $0.name == "BaseViewController" }, 
+                     "BaseViewController should be subclassable")
+        XCTAssertFalse(subclassableClasses.contains { $0.name == "HomeViewController" }, 
+                      "HomeViewController should not be subclassable")
+    }
+    
+    // MARK: - Struct-Specific Filtering Tests
+    
+    func testStructSpecificFiltering() {
+        let testFilesDirectory = makeSUT()
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
+        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let structs = scope.structs()
+        
+        // Test implementing
+        let codableStructs = structs.implementing(protocol: "Codable")
+        XCTAssertTrue(codableStructs.count > 0, "Should find structs implementing Codable")
+        XCTAssertTrue(codableStructs.contains { $0.name == "User" }, "User should implement Codable")
+        
+        let identifiableStructs = structs.implementing(protocol: "Identifiable")
+        XCTAssertTrue(identifiableStructs.count > 0, "Should find structs implementing Identifiable")
+        XCTAssertTrue(identifiableStructs.contains { $0.name == "User" }, "User should implement Identifiable")
+        
+        // Test implementingAny
+        let anyProtocolStructs = structs.implementingAny(protocols: "Codable", "Equatable")
+        XCTAssertTrue(anyProtocolStructs.count > 0, "Should find structs implementing any of the protocols")
+        
+        // Test implementingAll
+        let allProtocolsStructs = structs.implementingAll(protocols: "Codable", "Equatable")
+        XCTAssertTrue(allProtocolsStructs.count > 0, "Should find structs implementing all protocols")
+        XCTAssertTrue(allProtocolsStructs.contains { $0.name == "User" }, 
+                     "User should implement all required protocols")
+        
+        // Test havingMethod
+        let structsWithEqualMethod = structs.havingMethod(named: "==")
+        XCTAssertTrue(structsWithEqualMethod.count > 0, "Should find structs with equality method")
+        XCTAssertTrue(structsWithEqualMethod.contains { $0.name == "User" }, "User should have equality method")
+        
+        // Test havingProperty
+        let structsWithIdProperty = structs.havingProperty(named: "id")
+        XCTAssertEqual(structsWithIdProperty.count, 3, "Should find 3 structs with id property")
+        XCTAssertTrue(structsWithIdProperty.contains { $0.name == "User" }, "User should have id property")
+        XCTAssertTrue(structsWithIdProperty.contains { $0.name == "ProductViewModel" }, 
+                     "ProductViewModel should have id property")
+    }
+    
+    // MARK: - Protocol-Specific Filtering Tests
+    
+    func testProtocolSpecificFiltering() {
+        let testFilesDirectory = makeSUT()
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
+        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let protocols = scope.protocols()
+        
+        // Test inheriting
+        let repoProtocols = protocols.inheriting(protocol: "Repository")
+        XCTAssertEqual(repoProtocols.count, 1, "Should find 1 protocol inheriting from Repository")
+        XCTAssertEqual(repoProtocols.first?.name, "UserRepository", 
+                      "UserRepository should inherit from Repository")
+        
+        // Test requiringMethod
+        let protocolsRequiringFetch = protocols.requiringMethod(named: "fetch")
+        XCTAssertEqual(protocolsRequiringFetch.count, 1, "Should find 1 protocol requiring fetch method")
+        XCTAssertEqual(protocolsRequiringFetch.first?.name, "Repository", 
+                      "Repository should require fetch method")
+        
+        let protocolsRequiringSave = protocols.requiringMethod(named: "save")
+        XCTAssertEqual(protocolsRequiringSave.count, 1, "Should find 1 protocol requiring save method")
+        
+        // Test requiringProperty
+        let protocolsRequiringIsLoading = protocols.requiringProperty(named: "isLoading")
+        XCTAssertEqual(protocolsRequiringIsLoading.count, 1, "Should find 1 protocol requiring isLoading property")
+        XCTAssertEqual(protocolsRequiringIsLoading.first?.name, "ViewModel", 
+                      "ViewModel should require isLoading property")
+    }
+    
+    // MARK: - Function-Specific Filtering Tests
+    
+    func testFunctionSpecificFiltering() {
+        let testFilesDirectory = makeSUT()
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
+        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let functions = scope.functions()
+        
+        // Test returningType
+        let stringFunctions = functions.returningType("String")
+        XCTAssertTrue(stringFunctions.count > 0, "Should find functions returning String")
+        XCTAssertTrue(stringFunctions.contains { $0.name == "formatCurrency" }, 
+                     "formatCurrency should return String")
+        
+        // Test returningAnyType
+        let nonVoidFunctions = functions.returningAnyType()
+        XCTAssertTrue(nonVoidFunctions.count > 0, "Should find functions returning a value")
+        
+        // Test returningVoid
+        let voidFunctions = functions.returningVoid()
+        XCTAssertTrue(voidFunctions.count > 0, "Should find void functions")
+        XCTAssertTrue(voidFunctions.contains { $0.name == "logMessage" }, 
+                     "logMessage should return void")
+        
+        // Test havingParameter
+        let functionsWithMessage = functions.havingParameter(named: "message")
+        XCTAssertTrue(functionsWithMessage.count > 0, "Should find functions with message parameter")
+        XCTAssertTrue(functionsWithMessage.contains { $0.name == "logMessage" }, 
+                     "logMessage should have message parameter")
+        
+        // Test withParameterCount
+        let functionsWithTwoParams = functions.withParameterCount(2)
+        XCTAssertTrue(functionsWithTwoParams.count > 0, "Should find functions with exactly 2 parameters")
+        XCTAssertTrue(functionsWithTwoParams.contains { $0.name == "formatCurrency" }, 
+                     "formatCurrency should have 2 parameters")
+        
+        // Test withMinParameterCount
+        let functionsWithAtLeastTwoParams = functions.withMinParameterCount(2)
+        XCTAssertTrue(functionsWithAtLeastTwoParams.count > 0, "Should find functions with at least 2 parameters")
+        XCTAssertTrue(functionsWithAtLeastTwoParams.contains { $0.name == "formatCurrency" }, 
+                     "formatCurrency should have at least 2 parameters")
+        XCTAssertTrue(functionsWithAtLeastTwoParams.contains { $0.name == "calculateDistance" }, 
+                     "calculateDistance should have at least 2 parameters")
+        
+        // Test async
+        let asyncFunctions = functions.async()
+        XCTAssertTrue(asyncFunctions.count > 0, "Should find async functions")
+        XCTAssertTrue(asyncFunctions.contains { $0.name == "fetchData" }, 
+                     "fetchData should be async")
+        
+        // Test throwing
+        let throwingFunctions = functions.throwing()
+        XCTAssertTrue(throwingFunctions.count > 0, "Should find throwing functions")
+        XCTAssertTrue(throwingFunctions.contains { $0.name == "fetchData" }, 
+                     "fetchData should be throwing")
+    }
+    
+    // MARK: - Property-Specific Filtering Tests
+    
+    func testPropertySpecificFiltering() {
+        let testFilesDirectory = makeSUT()
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
+        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+
+        // Get properties from the Product struct
+        let productProperties = scope.structs()
+            .withName("Product")
+            .first?.properties ?? []
+        
+        // Test ofType
+        let stringProperties = productProperties.ofType("String")
+        XCTAssertTrue(stringProperties.count > 0, "Should find String properties")
+        XCTAssertTrue(stringProperties.contains { $0.name == "name" }, "name should be a String property")
+        XCTAssertTrue(stringProperties.contains { $0.name == "id" }, "id should be a String property")
+        
+        let doubleProperties = productProperties.ofType("Double")
+        XCTAssertTrue(doubleProperties.count > 0, "Should find Double properties")
+        XCTAssertTrue(doubleProperties.contains { $0.name == "price" }, "price should be a Double property")
+        
+        // Test computed
+        let computedProperties = productProperties.computed()
+        XCTAssertTrue(computedProperties.count > 0, "Should find computed properties")
+        XCTAssertTrue(computedProperties.contains { $0.name == "formattedPrice" }, 
+                     "formattedPrice should be a computed property")
+        XCTAssertTrue(computedProperties.contains { $0.name == "taxIncludedPrice" }, 
+                     "taxIncludedPrice should be a computed property")
+        
+        // Test stored
+        let storedProperties = productProperties.stored()
+        XCTAssertTrue(storedProperties.count > 0, "Should find stored properties")
+        XCTAssertTrue(storedProperties.contains { $0.name == "id" }, "id should be a stored property")
+        XCTAssertTrue(storedProperties.contains { $0.name == "name" }, "name should be a stored property")
+        XCTAssertTrue(storedProperties.contains { $0.name == "price" }, "price should be a stored property")
+        
+        // Test withInitialValue
+        let propertiesWithInitialValues = productProperties.withInitialValue()
+        XCTAssertTrue(propertiesWithInitialValues.count > 0, "Should find properties with initial values")
+        XCTAssertTrue(propertiesWithInitialValues.contains { $0.name == "id" }, 
+                     "id should have an initial value")
+        XCTAssertTrue(propertiesWithInitialValues.contains { $0.name == "isAvailable" }, 
+                     "isAvailable should have an initial value")
+        
+        // Test withoutInitialValue
+        let propertiesWithoutInitialValues = productProperties.withoutInitialValue()
+        XCTAssertTrue(propertiesWithoutInitialValues.count > 0, "Should find properties without initial values")
+        XCTAssertTrue(propertiesWithoutInitialValues.contains { $0.name == "description" }, 
+                     "description should not have an initial value")
+    }
+    
+    // MARK: - Enum-Specific Filtering Tests
+    
+    func testEnumSpecificFiltering() {
+        let testFilesDirectory = makeSUT()
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
+        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let enums = scope.enums()
+        
+        // Test implementing
+        let errorEnums = enums.implementing(protocol: "Error")
+        XCTAssertEqual(errorEnums.count, 1, "Should find 1 enum implementing Error")
+        XCTAssertEqual(errorEnums.first?.name, "NetworkError", "NetworkError should implement Error")
+        
+        let equatableEnums = enums.implementing(protocol: "Equatable")
+        XCTAssertEqual(equatableEnums.count, 1, "Should find 1 enum implementing Equatable")
+        XCTAssertEqual(equatableEnums.first?.name, "NetworkError", "NetworkError should implement Equatable")
+        
+        // Test withRawType
+        let stringEnums = enums.withRawType("String")
+        XCTAssertEqual(stringEnums.count, 3, "Should find 3 enums with String raw type")
+        XCTAssertTrue(stringEnums.contains { $0.name == "ApiEndpoint" }, "ApiEndpoint should have String raw type")
+        XCTAssertTrue(stringEnums.contains { $0.name == "UserRole" }, "UserRole should have String raw type")
+        XCTAssertTrue(stringEnums.contains { $0.name == "LogLevel" }, "LogLevel should have String raw type")
+
+        // Test havingCase
+        let enumsWithLightCase = enums.havingCase(named: "light")
+        XCTAssertEqual(enumsWithLightCase.count, 1, "Should find 1 enum with 'light' case")
+        XCTAssertEqual(enumsWithLightCase.first?.name, "Theme", "Theme should have 'light' case")
+        
+        let enumsWithUnauthorizedCase = enums.havingCase(named: "unauthorized")
+        XCTAssertEqual(enumsWithUnauthorizedCase.count, 1, "Should find 1 enum with 'unauthorized' case")
+        XCTAssertEqual(enumsWithUnauthorizedCase.first?.name, "NetworkError", "NetworkError should have 'unauthorized' case")
+        
+        // Test withAssociatedValues
+        let enumsWithAssociatedValues = enums.withAssociatedValues()
+        XCTAssertEqual(enumsWithAssociatedValues.count, 1, "Should find 1 enum with associated values")
+        XCTAssertEqual(enumsWithAssociatedValues.first?.name, "NetworkError", "NetworkError should have associated values")
+        
+        // Test withRawValues
+        let enumsWithRawValues = enums.withRawValues()
+        XCTAssertEqual(enumsWithRawValues.count, 1, "Should find 1 enums with raw values")
+        XCTAssertTrue(enumsWithRawValues.contains { $0.name == "ApiEndpoint" }, "ApiEndpoint should have raw values")
+    }
+    
+    // MARK: - Import-Specific Filtering Tests
+    
+    func testImportSpecificFiltering() {
+        let testFilesDirectory = makeSUT()
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
+        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let imports = scope.imports()
+        
+        // Test ofModule
+        let foundationImports = imports.ofModule("Foundation")
+        XCTAssertTrue(foundationImports.count > 0, "Should find Foundation imports")
+        
+        let uikitImports = imports.ofModule("UIKit")
+        XCTAssertTrue(uikitImports.count > 0, "Should find UIKit imports")
+        
+        // Test ofKind - requires custom parsing to be fully tested
+        
+        // Test includingType
+        let uiTableViewImports = imports.includingType("UITableView")
+        XCTAssertTrue(uiTableViewImports.count > 0, "Should find imports including UITableView")
+        
+        // Test fromAppleFrameworks
+        let appleImports = imports.fromAppleFrameworks()
+        XCTAssertTrue(appleImports.count > 0, "Should find imports from Apple frameworks")
+        XCTAssertTrue(appleImports.contains { $0.name == "UIKit" }, "Should find UIKit imports")
+        XCTAssertTrue(appleImports.contains { $0.name == "SwiftUI" }, "Should find SwiftUI imports")
+        XCTAssertTrue(appleImports.contains { $0.name == "CoreData" }, "Should find CoreData imports")
+        
+        // Test fromThirdPartyLibraries
+        let thirdPartyImports = imports.fromThirdPartyLibraries()
+        XCTAssertTrue(thirdPartyImports.count > 0, "Should find imports from third-party libraries")
+        XCTAssertTrue(thirdPartyImports.contains { $0.name == "Alamofire" }, "Should find Alamofire imports")
+        XCTAssertTrue(thirdPartyImports.contains { $0.name == "SnapKit" }, "Should find SnapKit imports")
+        XCTAssertTrue(thirdPartyImports.contains { $0.name == "RxSwift" }, "Should find RxSwift imports")
+        
+        // Test withSubmodules
+        let importsWithSubmodules = imports.withSubmodules()
+        XCTAssertTrue(importsWithSubmodules.count > 0, "Should find imports with submodules")
+        XCTAssertTrue(importsWithSubmodules.contains { $0.name == "UIKit" && $0.submodules.contains("UITableView") }, 
+                     "Should find UIKit.UITableView import")
+        XCTAssertTrue(importsWithSubmodules.contains { $0.name == "CoreData" && $0.submodules.contains("NSManagedObject") }, 
+                     "Should find CoreData.NSManagedObject import")
+    }
+    
+    // MARK: - Composite Filtering Tests
+    
+    func testCompositeFiltering() {
+        let testFilesDirectory = makeSUT()
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
+        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+
+        // Test chaining different filters
+        let publicFinalClasses = scope.classes()
+            .withModifier(.public)
+            .withModifier(.final)
+        
+        XCTAssertEqual(publicFinalClasses.count, 1, "Should find 1 public final class")
+        XCTAssertEqual(publicFinalClasses.first?.name, "HomeViewController", "HomeViewController should be public and final")
+        
+        // Test using and() for custom predicates
+        let viewControllersWithViewModel = scope.classes()
+            .withNameSuffix("ViewController")
+            .and { $0.hasProperty(named: "viewModel") }
+        
+        XCTAssertEqual(viewControllersWithViewModel.count, 1, "Should find 1 view controller with viewModel property")
+        XCTAssertEqual(viewControllersWithViewModel.first?.name, "HomeViewController", 
+                      "HomeViewController should have viewModel property")
+        
+        // Test matching with custom predicate
+        let classesWithStaticProperty = scope.classes().matching { classDecl in
+            classDecl.properties.contains { property in
+                property.hasModifier(.static)
+            }
+        }
+        
+        XCTAssertTrue(classesWithStaticProperty.count > 0, "Should find classes with static properties")
+        XCTAssertTrue(classesWithStaticProperty.contains { $0.name == "ConfigurationManager" }, 
+                     "ConfigurationManager should have static properties")
+        
+        // Combined filter across multiple declaration types
+        let allNetworkRelated = scope.declarations()
+            .withNameContaining("Network")
+            .inFilePathContaining("Classes.swift")
+        
+        XCTAssertTrue(allNetworkRelated.count > 0, "Should find network-related declarations in Classes.swift")
+        XCTAssertTrue(allNetworkRelated.contains { $0.name == "NetworkService" }, 
+                     "Should find NetworkService in Classes.swift")
+    }
+    
+    // MARK: - Edge Case Tests
+    
+    func testEdgeCases() {
+        let testFilesDirectory = makeSUT()
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
+        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+
+        // Test empty collections
+        let nonExistentPrefixClasses = scope.classes().withNamePrefix("NonExistent")
+        XCTAssertEqual(nonExistentPrefixClasses.count, 0, "Should find 0 classes with non-existent prefix")
+        
+        // Test assertions on empty collections
+        let emptyAssertAll = nonExistentPrefixClasses.assertTrue { _ in false }
+        XCTAssertTrue(emptyAssertAll, "assertTrue on empty collection should return true")
+        
+        let emptyAssertAny = nonExistentPrefixClasses.assertAny { _ in true }
+        XCTAssertFalse(emptyAssertAny, "assertAny on empty collection should return false")
+        
+        // Test invalid regex
+        let invalidRegexMatches = scope.declarations().withNameMatching("[")
+        XCTAssertEqual(invalidRegexMatches.count, 0, "Invalid regex should return empty collection")
+        
+        // Test case sensitivity
+        let caseInsensitiveMatch = scope.declarations().matching { $0.name == "homeviewcontroller" }
+        XCTAssertEqual(caseInsensitiveMatch.count, 0, "Case-sensitive match should find 0 results")
+        
+        let caseCorrectMatch = scope.declarations().matching { $0.name == "HomeViewController" }
+        XCTAssertEqual(caseCorrectMatch.count, 1, "Correct case match should find 1 result")
+        
+        // Test non-existent properties/methods
+        let nonExistentPropertyClasses = scope.classes().havingProperty(named: "nonExistentProperty")
+        XCTAssertEqual(nonExistentPropertyClasses.count, 0, "Should find 0 classes with non-existent property")
+        
+        let nonExistentMethodClasses = scope.classes().havingMethod(named: "nonExistentMethod")
+        XCTAssertEqual(nonExistentMethodClasses.count, 0, "Should find 0 classes with non-existent method")
+    }
+}
+
+extension FilteringAPITests {
+    func makeSUT() -> String {
+        let testFilesDirectory = NSTemporaryDirectory() + "FilteringAPITests_" + UUID().uuidString
 
         do {
             try FileManager.default.createDirectory(atPath: testFilesDirectory, withIntermediateDirectories: true)
-            
+
             // Create test files
-            try createClassesFile()
-            try createStructsFile()
-            try createProtocolsFile()
-            try createEnumsFile()
-            try createFunctionsFile()
-            try createModelsFile()
-            try createImportsFile()
+            try createClassesFile(testFilesDirectory)
+            try createStructsFile(testFilesDirectory)
+            try createProtocolsFile(testFilesDirectory)
+            try createEnumsFile(testFilesDirectory)
+            try createFunctionsFile(testFilesDirectory)
+            try createModelsFile(testFilesDirectory)
+            try createImportsFile(testFilesDirectory)
         } catch {
             XCTFail("Failed to set up test environment: \(error)")
         }
+
+        return testFilesDirectory
     }
-    
-    // Tear down - remove test files
-    override func tearDown() {
-        super.tearDown()
-        
-        // Clean up temporary directory
+
+    private func cleanup(_ testFilesDirectory: String) {
         try? FileManager.default.removeItem(atPath: testFilesDirectory)
     }
-    
-    // MARK: - Test File Creation Helpers
-    
-    private func createClassesFile() throws {
+
+    private func createClassesFile(_ testFilesDirectory: String) throws {
         let classesContent = """
         import Foundation
         import UIKit
@@ -115,11 +667,11 @@ final class FilteringAPITests: XCTestCase {
             }
         }
         """
-        
+
         try classesContent.write(toFile: testFilesDirectory + "/Classes.swift", atomically: true, encoding: .utf8)
     }
-    
-    private func createStructsFile() throws {
+
+    private func createStructsFile(_ testFilesDirectory: String) throws {
         let structsContent = """
         import Foundation
         
@@ -186,11 +738,11 @@ final class FilteringAPITests: XCTestCase {
             }
         }
         """
-        
+
         try structsContent.write(toFile: testFilesDirectory + "/Structs.swift", atomically: true, encoding: .utf8)
     }
-    
-    private func createProtocolsFile() throws {
+
+    private func createProtocolsFile(_ testFilesDirectory: String) throws {
         let protocolsContent = """
         import Foundation
         
@@ -234,11 +786,11 @@ final class FilteringAPITests: XCTestCase {
             func homeViewControllerDidRequestLogout()
         }
         """
-        
+
         try protocolsContent.write(toFile: testFilesDirectory + "/Protocols.swift", atomically: true, encoding: .utf8)
     }
-    
-    private func createEnumsFile() throws {
+
+    private func createEnumsFile(_ testFilesDirectory: String) throws {
         let enumsContent = """
         import Foundation
         
@@ -311,11 +863,11 @@ final class FilteringAPITests: XCTestCase {
             }
         }
         """
-        
+
         try enumsContent.write(toFile: testFilesDirectory + "/Enums.swift", atomically: true, encoding: .utf8)
     }
-    
-    private func createFunctionsFile() throws {
+
+    private func createFunctionsFile(_ testFilesDirectory: String) throws {
         let functionsContent = """
         import Foundation
         
@@ -360,11 +912,11 @@ final class FilteringAPITests: XCTestCase {
             case error
         }
         """
-        
+
         try functionsContent.write(toFile: testFilesDirectory + "/Functions.swift", atomically: true, encoding: .utf8)
     }
-    
-    private func createModelsFile() throws {
+
+    private func createModelsFile(_ testFilesDirectory: String) throws {
         let modelsContent = """
         import Foundation
         
@@ -429,13 +981,13 @@ final class FilteringAPITests: XCTestCase {
             }
         }
         """
-        
+
         try modelsContent.write(toFile: testFilesDirectory + "/Models.swift", atomically: true, encoding: .utf8)
     }
-    
-    private func createImportsFile() throws {
+
+    private func createImportsFile(_ testFilesDirectory: String) throws {
         // Create multiple files with different import patterns
-        
+
         // File with Apple framework imports
         let appleImportsContent = """
         import Foundation
@@ -454,7 +1006,7 @@ final class FilteringAPITests: XCTestCase {
             }
         }
         """
-        
+
         // File with third-party imports
         let thirdPartyImportsContent = """
         import Foundation
@@ -474,7 +1026,7 @@ final class FilteringAPITests: XCTestCase {
             }
         }
         """
-        
+
         // File with submodule imports
         let submoduleImportsContent = """
         import Foundation
@@ -492,521 +1044,9 @@ final class FilteringAPITests: XCTestCase {
             }
         }
         """
-        
+
         try appleImportsContent.write(toFile: testFilesDirectory + "/AppleImports.swift", atomically: true, encoding: .utf8)
         try thirdPartyImportsContent.write(toFile: testFilesDirectory + "/ThirdPartyImports.swift", atomically: true, encoding: .utf8)
         try submoduleImportsContent.write(toFile: testFilesDirectory + "/SubmoduleImports.swift", atomically: true, encoding: .utf8)
-    }
-    
-    // MARK: - Filter Tests
-    
-    // MARK: - Name Filtering Tests
-    
-    func testNameFiltering() {
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
-
-        // Test withNameSuffix
-        let viewControllers: [SwiftClassDeclaration] = scope.classes().withNameSuffix("ViewController")
-        XCTAssertEqual(viewControllers.count, 2, "Should find 2 view controller classes")
-        XCTAssertTrue(viewControllers.contains { $0.name == "BaseViewController" }, "Should find BaseViewController")
-        XCTAssertTrue(viewControllers.contains { $0.name == "HomeViewController" }, "Should find HomeViewController")
-        
-        // Test withNamePrefix
-        let networkClasses = scope.declarations().withNamePrefix("Network")
-        XCTAssertEqual(networkClasses.count, 4, "Should find 4 Network* declarations")
-        XCTAssertTrue(networkClasses.contains { $0.name == "NetworkService" }, "Should find NetworkService")
-        XCTAssertTrue(networkClasses.contains { $0.name == "NetworkConfiguration" }, "Should find NetworkConfiguration")
-        XCTAssertTrue(networkClasses.contains { $0.name == "NetworkError" }, "Should find NetworkError")
-        XCTAssertTrue(networkClasses.contains { $0.name == "NetworkManager" }, "Should find NetworkManager")
-
-        // Test withNameContaining
-        let userDeclarations = scope.declarations().withNameContaining("User")
-        XCTAssertEqual(userDeclarations.count, 5, "Should find 5 declarations containing 'User'")
-        
-        // Test withName
-        let homeVC = scope.classes().withName("HomeViewController")
-        XCTAssertEqual(homeVC.count, 1, "Should find exactly 1 HomeViewController")
-        XCTAssertEqual(homeVC.first?.name, "HomeViewController", "Should find HomeViewController by exact name")
-        
-        // Test withNames
-        let specificModels = scope.declarations().withNames(["User", "Product"])
-        XCTAssertEqual(specificModels.count, 2, "Should find exactly 2 models")
-        XCTAssertTrue(specificModels.contains { $0.name == "User" }, "Should find User by name")
-        XCTAssertTrue(specificModels.contains { $0.name == "Product" }, "Should find Product by name")
-        
-        // Test withNameMatching
-        let viewModelPattern = scope.declarations().withNameMatching(".*ViewModel")
-        XCTAssertEqual(viewModelPattern.count, 2, "Should find 2 view models")
-        XCTAssertTrue(viewModelPattern.contains { $0.name == "ProductViewModel" }, "Should find ProductViewModel")
-        XCTAssertTrue(viewModelPattern.contains { $0.name == "ViewModel" }, "Should find ViewModel protocol")
-    }
-    
-    // MARK: - Modifier Filtering Tests
-    
-    func testModifierFiltering() {
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
-
-        // Test withModifier
-        let publicDeclarations = scope.declarations().withModifier(.public)
-        XCTAssertTrue(publicDeclarations.count > 0, "Should find public declarations")
-        
-        let privateDeclarations = scope.declarations().withModifier(.private)
-        XCTAssertTrue(privateDeclarations.count > 0, "Should find private declarations")
-        
-        let finalClasses = scope.classes().withModifier(.final)
-        XCTAssertEqual(finalClasses.count, 1, "Should find 1 final class")
-        XCTAssertEqual(finalClasses.first?.name, "HomeViewController", "The final class should be HomeViewController")
-        
-        // Test withAnyModifier
-        let publicOrPrivateDeclarations = scope.declarations().withAnyModifier(.public, .private)
-        XCTAssertTrue(publicOrPrivateDeclarations.count > 0, "Should find declarations with either public or private modifier")
-        XCTAssertTrue(publicOrPrivateDeclarations.count >= publicDeclarations.count + privateDeclarations.count, 
-                      "Should find at least as many declarations as public and private combined")
-        
-        // Test withAllModifiers
-        let publicFinalClasses = scope.classes().withAllModifiers(.public, .final)
-        XCTAssertEqual(publicFinalClasses.count, 1, "Should find 1 public final class")
-        XCTAssertEqual(publicFinalClasses.first?.name, "HomeViewController", "The public final class should be HomeViewController")
-        
-        // Test withoutModifier
-        let nonFinalClasses = scope.classes().withoutModifier(.final)
-        XCTAssertTrue(nonFinalClasses.count > 0, "Should find non-final classes")
-        XCTAssertFalse(nonFinalClasses.contains { $0.name == "HomeViewController" }, "HomeViewController should not be in non-final classes")
-        
-        // Test withoutAnyModifier
-        let nonPublicOrPrivateDeclarations = scope.declarations().withoutAnyModifier(.public, .private)
-        XCTAssertTrue(nonPublicOrPrivateDeclarations.count > 0, "Should find declarations with neither public nor private modifier")
-    }
-    
-    // MARK: - Annotation Filtering Tests
-    
-    func testAnnotationFiltering() {
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
-
-        // Test withAnnotation
-        let availableDeclarations = scope.declarations().withAnnotation(named: "available")
-        XCTAssertEqual(availableDeclarations.count, 1, "Should find 1 declaration with @available")
-        XCTAssertEqual(availableDeclarations.first?.name, "HomeViewController", "HomeViewController should have @available annotation")
-        
-        // Test withAnyAnnotation
-        // Would need more test files with different annotations to properly test
-        
-        // Test withoutAnnotation
-        let nonAvailableDeclarations = scope.declarations().withoutAnnotation(named: "available")
-        XCTAssertTrue(nonAvailableDeclarations.count > 0, "Should find declarations without @available")
-        XCTAssertFalse(nonAvailableDeclarations.contains { $0.name == "HomeViewController" }, 
-                      "HomeViewController should not be in declarations without @available")
-    }
-    
-    // MARK: - Location Filtering Tests
-    
-    func testLocationFiltering() {
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
-
-        // Test inFile
-        let classesFilePath = testFilesDirectory + "/Classes.swift"
-        let classesFileDeclarations = scope.declarations().inFile(classesFilePath)
-        XCTAssertTrue(classesFileDeclarations.count > 0, "Should find declarations in Classes.swift")
-        XCTAssertTrue(classesFileDeclarations.contains { $0.name == "HomeViewController" }, 
-                     "HomeViewController should be in Classes.swift")
-        
-        // Test inFilePathContaining
-        let enumsDeclarations = scope.declarations().inFilePathContaining("Enums.swift")
-        XCTAssertTrue(enumsDeclarations.count > 0, "Should find declarations in Enums.swift")
-        XCTAssertTrue(enumsDeclarations.contains { $0.name == "NetworkError" }, 
-                     "NetworkError should be in Enums.swift")
-        
-        // Test inPackage - for this example, we'll use directory name as package
-        let functionsPackageDeclarations = scope.declarations().inPackage("Functions")
-        XCTAssertTrue(functionsPackageDeclarations.count > 0, "Should find declarations in Functions package")
-        XCTAssertTrue(functionsPackageDeclarations.contains { $0.name == "formatCurrency" }, 
-                     "formatCurrency should be in Functions package")
-    }
-    
-    // MARK: - Class-Specific Filtering Tests
-    
-    func testClassSpecificFiltering() {
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
-        let classes = scope.classes()
-        
-        // Test extending
-        let viewControllerSubclasses = classes.extending(class: "BaseViewController")
-        XCTAssertEqual(viewControllerSubclasses.count, 1, "Should find 1 subclass of BaseViewController")
-        XCTAssertEqual(viewControllerSubclasses.first?.name, "HomeViewController", 
-                      "HomeViewController should extend BaseViewController")
-        
-        // Test implementing
-        // Need class implementing protocol to test properly
-        
-        // Test havingMethod
-        let classesWithViewDidLoad = classes.havingMethod(named: "viewDidLoad")
-        XCTAssertEqual(classesWithViewDidLoad.count, 2, "Should find 2 classes with viewDidLoad method")
-        XCTAssertTrue(classesWithViewDidLoad.contains { $0.name == "BaseViewController" }, 
-                     "BaseViewController should have viewDidLoad method")
-        XCTAssertTrue(classesWithViewDidLoad.contains { $0.name == "HomeViewController" }, 
-                     "HomeViewController should have viewDidLoad method")
-        
-        // Test havingProperty
-        let classesWithLoadingProperty = classes.havingProperty(named: "isLoading")
-        XCTAssertEqual(classesWithLoadingProperty.count, 1, "Should find 1 class with isLoading property")
-        XCTAssertEqual(classesWithLoadingProperty.first?.name, "BaseViewController", 
-                      "BaseViewController should have isLoading property")
-        
-        // Test final
-        let finalClasses = classes.final()
-        XCTAssertEqual(finalClasses.count, 1, "Should find 1 final class")
-        XCTAssertEqual(finalClasses.first?.name, "HomeViewController", "The final class should be HomeViewController")
-        
-        // Test subclassable
-        let subclassableClasses = classes.subclassable()
-        XCTAssertTrue(subclassableClasses.count > 0, "Should find subclassable classes")
-        XCTAssertTrue(subclassableClasses.contains { $0.name == "BaseViewController" }, 
-                     "BaseViewController should be subclassable")
-        XCTAssertFalse(subclassableClasses.contains { $0.name == "HomeViewController" }, 
-                      "HomeViewController should not be subclassable")
-    }
-    
-    // MARK: - Struct-Specific Filtering Tests
-    
-    func testStructSpecificFiltering() {
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
-        let structs = scope.structs()
-        
-        // Test implementing
-        let codableStructs = structs.implementing(protocol: "Codable")
-        XCTAssertTrue(codableStructs.count > 0, "Should find structs implementing Codable")
-        XCTAssertTrue(codableStructs.contains { $0.name == "User" }, "User should implement Codable")
-        
-        let identifiableStructs = structs.implementing(protocol: "Identifiable")
-        XCTAssertTrue(identifiableStructs.count > 0, "Should find structs implementing Identifiable")
-        XCTAssertTrue(identifiableStructs.contains { $0.name == "User" }, "User should implement Identifiable")
-        
-        // Test implementingAny
-        let anyProtocolStructs = structs.implementingAny(protocols: "Codable", "Equatable")
-        XCTAssertTrue(anyProtocolStructs.count > 0, "Should find structs implementing any of the protocols")
-        
-        // Test implementingAll
-        let allProtocolsStructs = structs.implementingAll(protocols: "Codable", "Equatable")
-        XCTAssertTrue(allProtocolsStructs.count > 0, "Should find structs implementing all protocols")
-        XCTAssertTrue(allProtocolsStructs.contains { $0.name == "User" }, 
-                     "User should implement all required protocols")
-        
-        // Test havingMethod
-        let structsWithEqualMethod = structs.havingMethod(named: "==")
-        XCTAssertTrue(structsWithEqualMethod.count > 0, "Should find structs with equality method")
-        XCTAssertTrue(structsWithEqualMethod.contains { $0.name == "User" }, "User should have equality method")
-        
-        // Test havingProperty
-        let structsWithIdProperty = structs.havingProperty(named: "id")
-        XCTAssertEqual(structsWithIdProperty.count, 2, "Should find 2 structs with id property")
-        XCTAssertTrue(structsWithIdProperty.contains { $0.name == "User" }, "User should have id property")
-        XCTAssertTrue(structsWithIdProperty.contains { $0.name == "ProductViewModel" }, 
-                     "ProductViewModel should have id property")
-    }
-    
-    // MARK: - Protocol-Specific Filtering Tests
-    
-    func testProtocolSpecificFiltering() {
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
-        let protocols = scope.protocols()
-        
-        // Test inheriting
-        let repoProtocols = protocols.inheriting(protocol: "Repository")
-        XCTAssertEqual(repoProtocols.count, 1, "Should find 1 protocol inheriting from Repository")
-        XCTAssertEqual(repoProtocols.first?.name, "UserRepository", 
-                      "UserRepository should inherit from Repository")
-        
-        // Test requiringMethod
-        let protocolsRequiringFetch = protocols.requiringMethod(named: "fetch")
-        XCTAssertEqual(protocolsRequiringFetch.count, 1, "Should find 1 protocol requiring fetch method")
-        XCTAssertEqual(protocolsRequiringFetch.first?.name, "Repository", 
-                      "Repository should require fetch method")
-        
-        let protocolsRequiringSave = protocols.requiringMethod(named: "save")
-        XCTAssertEqual(protocolsRequiringSave.count, 1, "Should find 1 protocol requiring save method")
-        
-        // Test requiringProperty
-        let protocolsRequiringIsLoading = protocols.requiringProperty(named: "isLoading")
-        XCTAssertEqual(protocolsRequiringIsLoading.count, 1, "Should find 1 protocol requiring isLoading property")
-        XCTAssertEqual(protocolsRequiringIsLoading.first?.name, "ViewModel", 
-                      "ViewModel should require isLoading property")
-    }
-    
-    // MARK: - Function-Specific Filtering Tests
-    
-    func testFunctionSpecificFiltering() {
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
-        let functions = scope.functions()
-        
-        // Test returningType
-        let stringFunctions = functions.returningType("String")
-        XCTAssertTrue(stringFunctions.count > 0, "Should find functions returning String")
-        XCTAssertTrue(stringFunctions.contains { $0.name == "formatCurrency" }, 
-                     "formatCurrency should return String")
-        
-        // Test returningAnyType
-        let nonVoidFunctions = functions.returningAnyType()
-        XCTAssertTrue(nonVoidFunctions.count > 0, "Should find functions returning a value")
-        
-        // Test returningVoid
-        let voidFunctions = functions.returningVoid()
-        XCTAssertTrue(voidFunctions.count > 0, "Should find void functions")
-        XCTAssertTrue(voidFunctions.contains { $0.name == "logMessage" }, 
-                     "logMessage should return void")
-        
-        // Test havingParameter
-        let functionsWithMessage = functions.havingParameter(named: "message")
-        XCTAssertTrue(functionsWithMessage.count > 0, "Should find functions with message parameter")
-        XCTAssertTrue(functionsWithMessage.contains { $0.name == "logMessage" }, 
-                     "logMessage should have message parameter")
-        
-        // Test withParameterCount
-        let functionsWithTwoParams = functions.withParameterCount(2)
-        XCTAssertTrue(functionsWithTwoParams.count > 0, "Should find functions with exactly 2 parameters")
-        XCTAssertTrue(functionsWithTwoParams.contains { $0.name == "formatCurrency" }, 
-                     "formatCurrency should have 2 parameters")
-        
-        // Test withMinParameterCount
-        let functionsWithAtLeastTwoParams = functions.withMinParameterCount(2)
-        XCTAssertTrue(functionsWithAtLeastTwoParams.count > 0, "Should find functions with at least 2 parameters")
-        XCTAssertTrue(functionsWithAtLeastTwoParams.contains { $0.name == "formatCurrency" }, 
-                     "formatCurrency should have at least 2 parameters")
-        XCTAssertTrue(functionsWithAtLeastTwoParams.contains { $0.name == "calculateDistance" }, 
-                     "calculateDistance should have at least 2 parameters")
-        
-        // Test async
-        let asyncFunctions = functions.async()
-        XCTAssertTrue(asyncFunctions.count > 0, "Should find async functions")
-        XCTAssertTrue(asyncFunctions.contains { $0.name == "fetchData" }, 
-                     "fetchData should be async")
-        
-        // Test throwing
-        let throwingFunctions = functions.throwing()
-        XCTAssertTrue(throwingFunctions.count > 0, "Should find throwing functions")
-        XCTAssertTrue(throwingFunctions.contains { $0.name == "fetchData" }, 
-                     "fetchData should be throwing")
-    }
-    
-    // MARK: - Property-Specific Filtering Tests
-    
-    func testPropertySpecificFiltering() {
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
-
-        // Get properties from the Product struct
-        let productProperties = scope.structs()
-            .withName("Product")
-            .first?.properties ?? []
-        
-        // Test ofType
-        let stringProperties = productProperties.ofType("String")
-        XCTAssertTrue(stringProperties.count > 0, "Should find String properties")
-        XCTAssertTrue(stringProperties.contains { $0.name == "name" }, "name should be a String property")
-        XCTAssertTrue(stringProperties.contains { $0.name == "id" }, "id should be a String property")
-        
-        let doubleProperties = productProperties.ofType("Double")
-        XCTAssertTrue(doubleProperties.count > 0, "Should find Double properties")
-        XCTAssertTrue(doubleProperties.contains { $0.name == "price" }, "price should be a Double property")
-        
-        // Test computed
-        let computedProperties = productProperties.computed()
-        XCTAssertTrue(computedProperties.count > 0, "Should find computed properties")
-        XCTAssertTrue(computedProperties.contains { $0.name == "formattedPrice" }, 
-                     "formattedPrice should be a computed property")
-        XCTAssertTrue(computedProperties.contains { $0.name == "taxIncludedPrice" }, 
-                     "taxIncludedPrice should be a computed property")
-        
-        // Test stored
-        let storedProperties = productProperties.stored()
-        XCTAssertTrue(storedProperties.count > 0, "Should find stored properties")
-        XCTAssertTrue(storedProperties.contains { $0.name == "id" }, "id should be a stored property")
-        XCTAssertTrue(storedProperties.contains { $0.name == "name" }, "name should be a stored property")
-        XCTAssertTrue(storedProperties.contains { $0.name == "price" }, "price should be a stored property")
-        
-        // Test withInitialValue
-        let propertiesWithInitialValues = productProperties.withInitialValue()
-        XCTAssertTrue(propertiesWithInitialValues.count > 0, "Should find properties with initial values")
-        XCTAssertTrue(propertiesWithInitialValues.contains { $0.name == "id" }, 
-                     "id should have an initial value")
-        XCTAssertTrue(propertiesWithInitialValues.contains { $0.name == "isAvailable" }, 
-                     "isAvailable should have an initial value")
-        
-        // Test withoutInitialValue
-        let propertiesWithoutInitialValues = productProperties.withoutInitialValue()
-        XCTAssertTrue(propertiesWithoutInitialValues.count > 0, "Should find properties without initial values")
-        XCTAssertTrue(propertiesWithoutInitialValues.contains { $0.name == "description" }, 
-                     "description should not have an initial value")
-    }
-    
-    // MARK: - Enum-Specific Filtering Tests
-    
-    func testEnumSpecificFiltering() {
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
-        let enums = scope.enums()
-        
-        // Test implementing
-        let errorEnums = enums.implementing(protocol: "Error")
-        XCTAssertEqual(errorEnums.count, 1, "Should find 1 enum implementing Error")
-        XCTAssertEqual(errorEnums.first?.name, "NetworkError", "NetworkError should implement Error")
-        
-        let equatableEnums = enums.implementing(protocol: "Equatable")
-        XCTAssertEqual(equatableEnums.count, 1, "Should find 1 enum implementing Equatable")
-        XCTAssertEqual(equatableEnums.first?.name, "NetworkError", "NetworkError should implement Equatable")
-        
-        // Test withRawType
-        let stringEnums = enums.withRawType("String")
-        XCTAssertEqual(stringEnums.count, 2, "Should find 2 enums with String raw type")
-        XCTAssertTrue(stringEnums.contains { $0.name == "ApiEndpoint" }, "ApiEndpoint should have String raw type")
-        XCTAssertTrue(stringEnums.contains { $0.name == "UserRole" }, "UserRole should have String raw type")
-        
-        // Test havingCase
-        let enumsWithLightCase = enums.havingCase(named: "light")
-        XCTAssertEqual(enumsWithLightCase.count, 1, "Should find 1 enum with 'light' case")
-        XCTAssertEqual(enumsWithLightCase.first?.name, "Theme", "Theme should have 'light' case")
-        
-        let enumsWithUnauthorizedCase = enums.havingCase(named: "unauthorized")
-        XCTAssertEqual(enumsWithUnauthorizedCase.count, 1, "Should find 1 enum with 'unauthorized' case")
-        XCTAssertEqual(enumsWithUnauthorizedCase.first?.name, "NetworkError", "NetworkError should have 'unauthorized' case")
-        
-        // Test withAssociatedValues
-        let enumsWithAssociatedValues = enums.withAssociatedValues()
-        XCTAssertEqual(enumsWithAssociatedValues.count, 1, "Should find 1 enum with associated values")
-        XCTAssertEqual(enumsWithAssociatedValues.first?.name, "NetworkError", "NetworkError should have associated values")
-        
-        // Test withRawValues
-        let enumsWithRawValues = enums.withRawValues()
-        XCTAssertEqual(enumsWithRawValues.count, 2, "Should find 2 enums with raw values")
-        XCTAssertTrue(enumsWithRawValues.contains { $0.name == "ApiEndpoint" }, "ApiEndpoint should have raw values")
-        XCTAssertTrue(enumsWithRawValues.contains { $0.name == "UserRole" }, "UserRole should have raw values")
-    }
-    
-    // MARK: - Import-Specific Filtering Tests
-    
-    func testImportSpecificFiltering() {
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
-        let imports = scope.imports()
-        
-        // Test ofModule
-        let foundationImports = imports.ofModule("Foundation")
-        XCTAssertTrue(foundationImports.count > 0, "Should find Foundation imports")
-        
-        let uikitImports = imports.ofModule("UIKit")
-        XCTAssertTrue(uikitImports.count > 0, "Should find UIKit imports")
-        
-        // Test ofKind - requires custom parsing to be fully tested
-        
-        // Test includingType
-        let uiTableViewImports = imports.includingType("UITableView")
-        XCTAssertTrue(uiTableViewImports.count > 0, "Should find imports including UITableView")
-        
-        // Test fromAppleFrameworks
-        let appleImports = imports.fromAppleFrameworks()
-        XCTAssertTrue(appleImports.count > 0, "Should find imports from Apple frameworks")
-        XCTAssertTrue(appleImports.contains { $0.name == "UIKit" }, "Should find UIKit imports")
-        XCTAssertTrue(appleImports.contains { $0.name == "SwiftUI" }, "Should find SwiftUI imports")
-        XCTAssertTrue(appleImports.contains { $0.name == "CoreData" }, "Should find CoreData imports")
-        
-        // Test fromThirdPartyLibraries
-        let thirdPartyImports = imports.fromThirdPartyLibraries()
-        XCTAssertTrue(thirdPartyImports.count > 0, "Should find imports from third-party libraries")
-        XCTAssertTrue(thirdPartyImports.contains { $0.name == "Alamofire" }, "Should find Alamofire imports")
-        XCTAssertTrue(thirdPartyImports.contains { $0.name == "SnapKit" }, "Should find SnapKit imports")
-        XCTAssertTrue(thirdPartyImports.contains { $0.name == "RxSwift" }, "Should find RxSwift imports")
-        
-        // Test withSubmodules
-        let importsWithSubmodules = imports.withSubmodules()
-        XCTAssertTrue(importsWithSubmodules.count > 0, "Should find imports with submodules")
-        XCTAssertTrue(importsWithSubmodules.contains { $0.name == "UIKit" && $0.submodules.contains("UITableView") }, 
-                     "Should find UIKit.UITableView import")
-        XCTAssertTrue(importsWithSubmodules.contains { $0.name == "CoreData" && $0.submodules.contains("NSManagedObject") }, 
-                     "Should find CoreData.NSManagedObject import")
-    }
-    
-    // MARK: - Composite Filtering Tests
-    
-    func testCompositeFiltering() {
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
-
-        // Test chaining different filters
-        let publicFinalClasses = scope.classes()
-            .withModifier(.public)
-            .withModifier(.final)
-        
-        XCTAssertEqual(publicFinalClasses.count, 1, "Should find 1 public final class")
-        XCTAssertEqual(publicFinalClasses.first?.name, "HomeViewController", "HomeViewController should be public and final")
-        
-        // Test using and() for custom predicates
-        let viewControllersWithViewModel = scope.classes()
-            .withNameSuffix("ViewController")
-            .and { $0.hasProperty(named: "viewModel") }
-        
-        XCTAssertEqual(viewControllersWithViewModel.count, 1, "Should find 1 view controller with viewModel property")
-        XCTAssertEqual(viewControllersWithViewModel.first?.name, "HomeViewController", 
-                      "HomeViewController should have viewModel property")
-        
-        // Test matching with custom predicate
-        let classesWithStaticProperty = scope.classes().matching { classDecl in
-            classDecl.properties.contains { property in
-                property.hasModifier(.static)
-            }
-        }
-        
-        XCTAssertTrue(classesWithStaticProperty.count > 0, "Should find classes with static properties")
-        XCTAssertTrue(classesWithStaticProperty.contains { $0.name == "ConfigurationManager" }, 
-                     "ConfigurationManager should have static properties")
-        
-        // Combined filter across multiple declaration types
-        let allNetworkRelated = scope.declarations()
-            .withNameContaining("Network")
-            .inFilePathContaining("Classes.swift")
-        
-        XCTAssertTrue(allNetworkRelated.count > 0, "Should find network-related declarations in Classes.swift")
-        XCTAssertTrue(allNetworkRelated.contains { $0.name == "NetworkService" }, 
-                     "Should find NetworkService in Classes.swift")
-    }
-    
-    // MARK: - Edge Case Tests
-    
-    func testEdgeCases() {
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
-
-        // Test empty collections
-        let nonExistentPrefixClasses = scope.classes().withNamePrefix("NonExistent")
-        XCTAssertEqual(nonExistentPrefixClasses.count, 0, "Should find 0 classes with non-existent prefix")
-        
-        // Test assertions on empty collections
-        let emptyAssertAll = nonExistentPrefixClasses.assertTrue { _ in false }
-        XCTAssertTrue(emptyAssertAll, "assertTrue on empty collection should return true")
-        
-        let emptyAssertAny = nonExistentPrefixClasses.assertAny { _ in true }
-        XCTAssertFalse(emptyAssertAny, "assertAny on empty collection should return false")
-        
-        // Test invalid regex
-        let invalidRegexMatches = scope.declarations().withNameMatching("[")
-        XCTAssertEqual(invalidRegexMatches.count, 0, "Invalid regex should return empty collection")
-        
-        // Test case sensitivity
-        let caseInsensitiveMatch = scope.declarations().matching { $0.name.lowercased() == "homeviewcontroller" }
-        XCTAssertEqual(caseInsensitiveMatch.count, 0, "Case-sensitive match should find 0 results")
-        
-        let caseCorrectMatch = scope.declarations().matching { $0.name == "HomeViewController" }
-        XCTAssertEqual(caseCorrectMatch.count, 1, "Correct case match should find 1 result")
-        
-        // Test non-existent properties/methods
-        let nonExistentPropertyClasses = scope.classes().havingProperty(named: "nonExistentProperty")
-        XCTAssertEqual(nonExistentPropertyClasses.count, 0, "Should find 0 classes with non-existent property")
-        
-        let nonExistentMethodClasses = scope.classes().havingMethod(named: "nonExistentMethod")
-        XCTAssertEqual(nonExistentMethodClasses.count, 0, "Should find 0 classes with non-existent method")
-    }
-    
-    // MARK: - Performance Tests
-    
-    func testFilteringPerformance() {
-        // Skip for small test files, but useful for larger codebases
-        // This is more of an example than an actual test
-        measure {
-            let scope = Conformant.scopeFromDirectory(testFilesDirectory)
-            _ = scope.declarations().withModifier(.public)
-        }
     }
 }

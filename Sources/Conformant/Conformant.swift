@@ -228,6 +228,16 @@ public struct Conformant {
         return declarations
     }
 
+    public func typesAndExtensions() -> [AnySwiftDeclaration] {
+        var declarations: [AnySwiftDeclaration] = []
+        declarations.append(contentsOf: classes().map(AnySwiftDeclaration.init))
+        declarations.append(contentsOf: structs().map(AnySwiftDeclaration.init))
+        declarations.append(contentsOf: enums().map(AnySwiftDeclaration.init))
+        declarations.append(contentsOf: protocols().map(AnySwiftDeclaration.init))
+        declarations.append(contentsOf: extensions().map(AnySwiftDeclaration.init))
+        return declarations
+    }
+
     public func classesAndExtensions() -> [AnySwiftDeclaration] {
         var declarations: [AnySwiftDeclaration] = []
         declarations.append(contentsOf: classes().map(AnySwiftDeclaration.init))

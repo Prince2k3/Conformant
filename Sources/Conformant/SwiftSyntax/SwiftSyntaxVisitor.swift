@@ -449,52 +449,54 @@ class SwiftSyntaxVisitor: SyntaxVisitor {
     override func visit(_ node: FunctionDeclSyntax) -> SyntaxVisitorContinueKind {
         var currentDependencies: [SwiftDependency] = []
 
-        if !isMember(Syntax(node)) {
-            let location = getLocation(for: Syntax(node))
-            let name = node.name.text
-            let modifiers = extractModifiers(from: node.modifiers)
-            let annotations = extractAnnotations(from: node.attributes)
-            let parameterList = node.signature.parameterClause.parameters
-            let parameters = extractParameters(from: parameterList)
-            let returnType = node.signature.returnClause?.type.trimmedDescription
-            let body = node.body?.trimmedDescription
+            if !isMember(Syntax(node)) {
+                let location = getLocation(for: Syntax(node))
+                let name = node.name.text
+                let modifiers = extractModifiers(from: node.modifiers)
+                let annotations = extractAnnotations(from: node.attributes)
+                let parameterList = node.signature.parameterClause.parameters
+                let parameters = extractParameters(from: parameterList)
+                let returnType = node.signature.returnClause?.type.trimmedDescription
+                let body = node.body?.trimmedDescription
+                let effectSpecifiers = extractEffectSpecifiers(from: node.signature)
 
-            parameterList.forEach { param in
-                let typeSyntax = Syntax(param.type)
-                let typeName = typeSyntax.trimmedDescription
-                let depLocation = getLocation(for: typeSyntax)
+                parameterList.forEach { param in
+                    let typeSyntax = Syntax(param.type)
+                    let typeName = typeSyntax.trimmedDescription
+                    let depLocation = getLocation(for: typeSyntax)
 
-                for extractedName in extractTypeNames(from: typeName) {
-                    currentDependencies.append(
-                        SwiftDependency(name: extractedName, kind: .typeUsage, location: depLocation)
-                    )
+                    for extractedName in extractTypeNames(from: typeName) {
+                        currentDependencies.append(
+                            SwiftDependency(name: extractedName, kind: .typeUsage, location: depLocation)
+                        )
+                    }
                 }
+
+                if let returnType = node.signature.returnClause {
+                    let depLocation = getLocation(for: Syntax(returnType))
+                    for extractedName in extractTypeNames(from: returnType.type.trimmedDescription) {
+                        currentDependencies.append(
+                            SwiftDependency(name: extractedName, kind: .typeUsage, location: depLocation)
+                        )
+                    }
+                }
+
+                let functionDecl = SwiftFunctionDeclaration(
+                    name: name,
+                    modifiers: modifiers,
+                    annotations: annotations,
+                    dependencies: currentDependencies,
+                    filePath: filePath,
+                    location: location,
+                    parameters: parameters,
+                    returnType: returnType,
+                    body: body,
+                    effectSpecifiers: effectSpecifiers
+                )
+                topLevelFunctions.append(functionDecl)
             }
 
-            if let returnType = node.signature.returnClause {
-                let depLocation = getLocation(for: Syntax(returnType))
-                for extractedName in extractTypeNames(from: returnType.type.trimmedDescription) {
-                    currentDependencies.append(
-                        SwiftDependency(name: extractedName, kind: .typeUsage, location: depLocation)
-                    )
-                }
-            }
-
-            let functionDecl = SwiftFunctionDeclaration(
-                name: name,
-                modifiers: modifiers,
-                annotations: annotations,
-                dependencies: currentDependencies,
-                filePath: filePath,
-                location: location,
-                parameters: parameters,
-                returnType: returnType,
-                body: body
-            )
-            topLevelFunctions.append(functionDecl)
-        }
-
-        return .skipChildren
+            return .skipChildren
     }
 
     override func visit(_ node: VariableDeclSyntax) -> SyntaxVisitorContinueKind {
@@ -711,6 +713,20 @@ class SwiftSyntaxVisitor: SyntaxVisitor {
             functions: topLevelFunctions,
             properties: topLevelProperties,
             enums: enums
+        )
+    }
+}
+
+extension SyntaxVisitor {
+    func extractEffectSpecifiers(from signature: FunctionSignatureSyntax) -> SwiftFunctionDeclaration.FunctionEffectSpecifiers {
+        let isAsync = signature.effectSpecifiers?.asyncSpecifier != nil
+        let isThrows = signature.effectSpecifiers?.throwsClause?.throwsSpecifier != nil
+        let isRethrows = signature.effectSpecifiers?.throwsClause?.throwsSpecifier.text == "rethrows"
+
+        return SwiftFunctionDeclaration.FunctionEffectSpecifiers(
+            isAsync: isAsync,
+            isThrowing: isThrows && !isRethrows,
+            isRethrows: isRethrows
         )
     }
 }

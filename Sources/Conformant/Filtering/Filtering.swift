@@ -308,20 +308,17 @@ extension Collection where Element == SwiftFunctionDeclaration {
 
     /// Filter async functions
     public func async() -> [Element] {
-        // We'd need to extend SwiftFunctionDeclaration to have an isAsync property
-        // This is a simplified implementation
-        return self.filter { function in
-            function.modifiers.contains { $0.rawValue == "async" }
-        }
+        return self.filter { $0.isAsync }
     }
 
     /// Filter throwing functions
     public func throwing() -> [Element] {
-        // We'd need to extend SwiftFunctionDeclaration to have a throws property
-        // This is a simplified implementation
-        return self.filter { function in
-            function.modifiers.contains { $0.rawValue == "throws" }
-        }
+        return self.filter { $0.isThrowing }
+    }
+
+    /// Filter rethrowing functions
+    public func rethrowing() -> [Element] {
+        return self.filter { $0.effectSpecifiers.isRethrows }
     }
 }
 

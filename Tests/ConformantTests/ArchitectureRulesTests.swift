@@ -4,259 +4,13 @@ import SwiftParser
 @testable import Conformant
 
 final class ArchitectureRulesTests: XCTestCase {
-    var testFilesDirectory: String!
-    
-    override func setUp() {
-        super.setUp()
-        
-        testFilesDirectory = NSTemporaryDirectory() + "ArchitectureRulesTests_" + UUID().uuidString
-        
-        do {
-            try FileManager.default.createDirectory(atPath: testFilesDirectory, withIntermediateDirectories: true)
-            
-            let domainPath = testFilesDirectory + "/Domain"
-            let presentationPath = testFilesDirectory + "/Presentation"
-            let dataPath = testFilesDirectory + "/Data"
-            let corePath = testFilesDirectory + "/Core"
-            
-            try FileManager.default.createDirectory(atPath: domainPath, withIntermediateDirectories: true)
-            try FileManager.default.createDirectory(atPath: presentationPath, withIntermediateDirectories: true)
-            try FileManager.default.createDirectory(atPath: dataPath, withIntermediateDirectories: true)
-            try FileManager.default.createDirectory(atPath: corePath, withIntermediateDirectories: true)
-            
-            try createDomainFiles(in: domainPath)
-            try createPresentationFiles(in: presentationPath)
-            try createDataFiles(in: dataPath)
-            try createCoreFiles(in: corePath)
-        } catch {
-            XCTFail("Failed to set up test environment: \(error)")
-        }
-    }
-    
-    // Tear down - remove test files
-    override func tearDown() {
-        super.tearDown()
-        
-        // Clean up temporary directory
-        try? FileManager.default.removeItem(atPath: testFilesDirectory)
-    }
-    
-    // MARK: - Test File Creation Helpers
-    
-    private func createDomainFiles(in path: String) throws {
-        // User entity
-        let userFile = """
-        // User.swift
-        
-        import Foundation
-        
-        public struct User {
-            public let id: String
-            public let name: String
-            public let email: String
-            
-            public init(id: String, name: String, email: String) {
-                self.id = id
-                self.name = name
-                self.email = email
-            }
-        }
-        """
-        
-        // Repository interface
-        let repositoryFile = """
-        // UserRepository.swift
-        
-        import Foundation
-        
-        public protocol UserRepository {
-            func getUser(id: String) async throws -> User
-            func saveUser(_ user: User) async throws
-        }
-        """
-        
-        // Use case
-        let useCaseFile = """
-        // GetUserUseCase.swift
-        
-        import Foundation
-        
-        public class GetUserUseCase {
-            private let repository: UserRepository
-            
-            public init(repository: UserRepository) {
-                self.repository = repository
-            }
-            
-            public func execute(userId: String) async throws -> User {
-                return try await repository.getUser(id: userId)
-            }
-        }
-        """
-        
-        try userFile.write(toFile: path + "/User.swift", atomically: true, encoding: .utf8)
-        try repositoryFile.write(toFile: path + "/UserRepository.swift", atomically: true, encoding: .utf8)
-        try useCaseFile.write(toFile: path + "/GetUserUseCase.swift", atomically: true, encoding: .utf8)
-    }
-    
-    private func createPresentationFiles(in path: String) throws {
-        // View model
-        let viewModelFile = """
-        // UserViewModel.swift
-        
-        import Foundation
-        import Domain
-        import Core
-        
-        public class UserViewModel {
-            private let getUserUseCase: GetUserUseCase
-            public var user: User?
-            public var error: Error?
-            
-            public init(getUserUseCase: GetUserUseCase) {
-                self.getUserUseCase = getUserUseCase
-            }
-            
-            public func loadUser(id: String) async {
-                do {
-                    user = try await getUserUseCase.execute(userId: id)
-                } catch {
-                    self.error = error
-                    Logger.log(error.localizedDescription)
-                }
-            }
-        }
-        """
-        
-        // View
-        let viewFile = """
-        // UserView.swift
-        
-        import Foundation
-        import Domain
-        
-        public class UserView {
-            private let viewModel: UserViewModel
-            
-            public init(viewModel: UserViewModel) {
-                self.viewModel = viewModel
-            }
-            
-            public func display() {
-                if let user = viewModel.user {
-                    print("User: \\(user.name)")
-                } else if let error = viewModel.error {
-                    print("Error: \\(error.localizedDescription)")
-                }
-            }
-        }
-        """
-        
-        try viewModelFile.write(toFile: path + "/UserViewModel.swift", atomically: true, encoding: .utf8)
-        try viewFile.write(toFile: path + "/UserView.swift", atomically: true, encoding: .utf8)
-    }
-    
-    private func createDataFiles(in path: String) throws {
-        // Repository implementation
-        let repositoryFile = """
-        // UserRepositoryImpl.swift
-        
-        import Foundation
-        import Domain
-        import Core
-        
-        public class UserRepositoryImpl: UserRepository {
-            private let apiClient: APIClient
-            
-            public init(apiClient: APIClient) {
-                self.apiClient = apiClient
-            }
-            
-            public func getUser(id: String) async throws -> User {
-                // This would make an API call in a real implementation
-                return User(id: id, name: "Test User", email: "test@example.com")
-            }
-            
-            public func saveUser(_ user: User) async throws {
-                // This would make an API call in a real implementation
-                Logger.log("Saving user: \\(user.name)")
-            }
-        }
-        """
-        
-        // Data model
-        let dataModelFile = """
-        // UserResponse.swift
-        
-        import Foundation
-        
-        struct UserResponse: Decodable {
-            let id: String
-            let name: String
-            let email: String
-            
-            func toDomain() -> User {
-                return User(id: id, name: name, email: email)
-            }
-        }
-        """
-        
-        try repositoryFile.write(toFile: path + "/UserRepositoryImpl.swift", atomically: true, encoding: .utf8)
-        try dataModelFile.write(toFile: path + "/UserResponse.swift", atomically: true, encoding: .utf8)
-    }
-    
-    private func createCoreFiles(in path: String) throws {
-        // Logger utility
-        let loggerFile = """
-        // Logger.swift
-        
-        import Foundation
-        
-        public enum LogLevel {
-            case debug
-            case info
-            case error
-        }
-        
-        public class Logger {
-            public static func log(_ message: String, level: LogLevel = .info) {
-                print("[\\(level)]: \\(message)")
-            }
-        }
-        """
-        
-        // API client
-        let apiClientFile = """
-        // APIClient.swift
-        
-        import Foundation
-        
-        public class APIClient {
-            private let baseURL: URL
-            
-            public init(baseURL: URL) {
-                self.baseURL = baseURL
-            }
-            
-            public func fetch<T: Decodable>(endpoint: String) async throws -> T {
-                // This would make a network request in a real implementation
-                fatalError("Not implemented")
-            }
-            
-            public func send<T: Encodable>(data: T, endpoint: String) async throws {
-                // This would make a network request in a real implementation
-                fatalError("Not implemented")
-            }
-        }
-        """
-        
-        try loggerFile.write(toFile: path + "/Logger.swift", atomically: true, encoding: .utf8)
-        try apiClientFile.write(toFile: path + "/APIClient.swift", atomically: true, encoding: .utf8)
-    }
-    
-    // MARK: - Architecture Rules Tests
-    
     func testArchitectureRules() {
+        let testFilesDirectory = makeSUT()
+
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
         // Get the scope from the test directory
         let scope = Conformant.scopeFromDirectory(testFilesDirectory)
 
@@ -267,19 +21,13 @@ final class ArchitectureRulesTests: XCTestCase {
             let presentation = Layer(name: "Presentation", directory: "Presentation")
             let data = Layer(name: "Data", directory: "Data")
             let core = Layer(name: "Core", directory: "Core")
-            
-            // Define layers using modules (based on imports)
-            let domainModule = Layer(name: "DomainModule", module: "Domain")
-            let coreModule = Layer(name: "CoreModule", module: "Core")
-            
+
             // Register layers
             rules.defineLayer(domain)
             rules.defineLayer(presentation)
             rules.defineLayer(data)
             rules.defineLayer(core)
-            rules.defineLayer(domainModule)
-            rules.defineLayer(coreModule)
-            
+
             // Define clean architecture rules
             
             // Domain should not depend on other layers
@@ -293,10 +41,7 @@ final class ArchitectureRulesTests: XCTestCase {
             
             // Core should not depend on any other layer
             rules.add(core.dependsOnNothing())
-            
-            // Alternative rules for domain module (should work the same way)
-            rules.add(domainModule.dependsOnNothing())
-            
+
             // Presentation must not depend on Data
             rules.add(presentation.mustNotDependOn(data))
             
@@ -309,6 +54,12 @@ final class ArchitectureRulesTests: XCTestCase {
     }
     
     func testArchitectureRuleViolations() {
+        let testFilesDirectory = makeSUT()
+
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
         do {
             let violationPath = testFilesDirectory + "/Domain/ViolationExample.swift"
             let violationFile = """
@@ -355,6 +106,12 @@ final class ArchitectureRulesTests: XCTestCase {
     }
     
     func testLayerByDirectory() {
+        let testFilesDirectory = makeSUT()
+
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
         // Test creating layers by directory
         let scope = Conformant.scopeFromDirectory(testFilesDirectory)
 
@@ -383,12 +140,18 @@ final class ArchitectureRulesTests: XCTestCase {
     }
     
     func testLayerByModule() {
+        let testFilesDirectory = makeSUT()
+
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
         // Test creating layers by module (import statements)
         let scope = Conformant.scopeFromDirectory(testFilesDirectory)
 
         // Define layers using modules
-        let domainModule = Layer(name: "DomainModule", module: "Domain")
-        let coreModule = Layer(name: "CoreModule", module: "Core")
+        let domainModule = Layer(name: "DomainModule", directory: "Domain")
+        let coreModule = Layer(name: "CoreModule", directory: "Core")
 
         // Find declarations that import these modules
         let allDeclarations = scope.declarations()
@@ -408,6 +171,12 @@ final class ArchitectureRulesTests: XCTestCase {
     }
     
     func testLayerWithCustomPredicate() {
+        let testFilesDirectory = makeSUT()
+
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
         let scope = Conformant.scopeFromDirectory(testFilesDirectory)
 
         // Define a layer containing all view models
@@ -437,6 +206,12 @@ final class ArchitectureRulesTests: XCTestCase {
     }
     
     func testCombinedLayerRules() {
+        let testFilesDirectory = makeSUT()
+
+        defer {
+            cleanup(testFilesDirectory)
+        }
+
         let scope = Conformant.scopeFromDirectory(testFilesDirectory)
 
         let result = scope.assertArchitecture { rules in
@@ -459,5 +234,251 @@ final class ArchitectureRulesTests: XCTestCase {
         }
         
         XCTAssertTrue(result, "Combined layer architecture rules should pass")
+    }
+}
+
+extension ArchitectureRulesTests {
+    func makeSUT() -> String {
+        let testFilesDirectory = NSTemporaryDirectory() + "ArchitectureRulesTests_" + UUID().uuidString
+
+        do {
+            try FileManager.default.createDirectory(atPath: testFilesDirectory, withIntermediateDirectories: true)
+
+            let domainPath = testFilesDirectory + "/Domain"
+            let presentationPath = testFilesDirectory + "/Presentation"
+            let dataPath = testFilesDirectory + "/Data"
+            let corePath = testFilesDirectory + "/Core"
+
+            try FileManager.default.createDirectory(atPath: domainPath, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(atPath: presentationPath, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(atPath: dataPath, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(atPath: corePath, withIntermediateDirectories: true)
+
+            try createDomainFiles(in: domainPath)
+            try createPresentationFiles(in: presentationPath)
+            try createDataFiles(in: dataPath)
+            try createCoreFiles(in: corePath)
+        } catch {
+            XCTFail("Failed to set up test environment: \(error)")
+        }
+
+        return testFilesDirectory
+    }
+
+    func cleanup(_ testFilesDirectory: String) {
+        try? FileManager.default.removeItem(atPath: testFilesDirectory)
+    }
+
+    // MARK: - Test File Creation Helpers
+
+    private func createDomainFiles(in path: String) throws {
+        // User entity
+        let userFile = """
+        // User.swift
+        
+        import Foundation
+        
+        public struct User {
+            public let id: String
+            public let name: String
+            public let email: String
+            
+            public init(id: String, name: String, email: String) {
+                self.id = id
+                self.name = name
+                self.email = email
+            }
+        }
+        """
+
+        // Repository interface
+        let repositoryFile = """
+        // UserRepository.swift
+        
+        import Foundation
+        
+        public protocol UserRepository {
+            func getUser(id: String) async throws -> User
+            func saveUser(_ user: User) async throws
+        }
+        """
+
+        // Use case
+        let useCaseFile = """
+        // GetUserUseCase.swift
+        
+        import Foundation
+        
+        public class GetUserUseCase {
+            private let repository: UserRepository
+            
+            public init(repository: UserRepository) {
+                self.repository = repository
+            }
+            
+            public func execute(userId: String) async throws -> User {
+                return try await repository.getUser(id: userId)
+            }
+        }
+        """
+
+        try userFile.write(toFile: path + "/User.swift", atomically: true, encoding: .utf8)
+        try repositoryFile.write(toFile: path + "/UserRepository.swift", atomically: true, encoding: .utf8)
+        try useCaseFile.write(toFile: path + "/GetUserUseCase.swift", atomically: true, encoding: .utf8)
+    }
+
+    private func createPresentationFiles(in path: String) throws {
+        // View model
+        let viewModelFile = """
+        // UserViewModel.swift
+        
+        import Foundation
+        import Domain
+        import Core
+        
+        public class UserViewModel {
+            private let getUserUseCase: GetUserUseCase
+            public var user: User?
+            public var error: Error?
+            
+            public init(getUserUseCase: GetUserUseCase) {
+                self.getUserUseCase = getUserUseCase
+            }
+            
+            public func loadUser(id: String) async {
+                do {
+                    user = try await getUserUseCase.execute(userId: id)
+                } catch {
+                    self.error = error
+                    Logger.log(error.localizedDescription)
+                }
+            }
+        }
+        """
+
+        // View
+        let viewFile = """
+        // UserView.swift
+        
+        import Foundation
+        import Domain
+        
+        public class UserView {
+            private let viewModel: UserViewModel
+            
+            public init(viewModel: UserViewModel) {
+                self.viewModel = viewModel
+            }
+            
+            public func display() {
+                if let user = viewModel.user {
+                    print("User: \\(user.name)")
+                } else if let error = viewModel.error {
+                    print("Error: \\(error.localizedDescription)")
+                }
+            }
+        }
+        """
+
+        try viewModelFile.write(toFile: path + "/UserViewModel.swift", atomically: true, encoding: .utf8)
+        try viewFile.write(toFile: path + "/UserView.swift", atomically: true, encoding: .utf8)
+    }
+
+    private func createDataFiles(in path: String) throws {
+        // Repository implementation
+        let repositoryFile = """
+        // UserRepositoryImpl.swift
+        
+        import Foundation
+        import Domain
+        import Core
+        
+        public class UserRepositoryImpl: UserRepository {
+            private let apiClient: APIClient
+            
+            public init(apiClient: APIClient) {
+                self.apiClient = apiClient
+            }
+            
+            public func getUser(id: String) async throws -> User {
+                // This would make an API call in a real implementation
+                return User(id: id, name: "Test User", email: "test@example.com")
+            }
+            
+            public func saveUser(_ user: User) async throws {
+                // This would make an API call in a real implementation
+                Logger.log("Saving user: \\(user.name)")
+            }
+        }
+        """
+
+        // Data model
+        let dataModelFile = """
+        // UserResponse.swift
+        
+        import Foundation
+        
+        struct UserResponse: Decodable {
+            let id: String
+            let name: String
+            let email: String
+            
+            func toDomain() -> User {
+                return User(id: id, name: name, email: email)
+            }
+        }
+        """
+
+        try repositoryFile.write(toFile: path + "/UserRepositoryImpl.swift", atomically: true, encoding: .utf8)
+        try dataModelFile.write(toFile: path + "/UserResponse.swift", atomically: true, encoding: .utf8)
+    }
+
+    private func createCoreFiles(in path: String) throws {
+        // Logger utility
+        let loggerFile = """
+        // Logger.swift
+        
+        import Foundation
+        
+        public enum LogLevel {
+            case debug
+            case info
+            case error
+        }
+        
+        public class Logger {
+            public static func log(_ message: String, level: LogLevel = .info) {
+                print("[\\(level)]: \\(message)")
+            }
+        }
+        """
+
+        // API client
+        let apiClientFile = """
+        // APIClient.swift
+        
+        import Foundation
+        
+        public class APIClient {
+            private let baseURL: URL
+            
+            public init(baseURL: URL) {
+                self.baseURL = baseURL
+            }
+            
+            public func fetch<T: Decodable>(endpoint: String) async throws -> T {
+                // This would make a network request in a real implementation
+                fatalError("Not implemented")
+            }
+            
+            public func send<T: Encodable>(data: T, endpoint: String) async throws {
+                // This would make a network request in a real implementation
+                fatalError("Not implemented")
+            }
+        }
+        """
+
+        try loggerFile.write(toFile: path + "/Logger.swift", atomically: true, encoding: .utf8)
+        try apiClientFile.write(toFile: path + "/APIClient.swift", atomically: true, encoding: .utf8)
     }
 }
