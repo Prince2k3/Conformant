@@ -37,13 +37,18 @@ extension Collection where Element: SwiftDeclaration {
         return self.allSatisfy { !predicate($0) }
     }
 
-    /// Assert that at least one element matches the given predicate
-    public func assertAny(predicate: (Element) -> Bool) -> Bool {
-        return self.contains(where: predicate)
+    /// Assert that collection count matches give count
+    public func assertCount(_ count: Int) -> Bool {
+        return self.count == count
     }
 
-    /// Assert that no elements match the given predicate
-    public func assertNone(predicate: (Element) -> Bool) -> Bool {
-        return !self.contains(where: predicate)
+    /// Assert that colleciton is empty
+    public func assertEmpty() -> Bool {
+        return self.isEmpty
+    }
+
+    /// Assert that colleciton is not empty
+    public func assertNotEmpty() -> Bool {
+        return !self.isEmpty
     }
 }
