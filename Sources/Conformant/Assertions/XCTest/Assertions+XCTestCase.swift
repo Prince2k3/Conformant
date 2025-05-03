@@ -1,5 +1,5 @@
 //
-//  SwiftSpec+Architecture.swift
+//  Assertions+XCTestCase.swift
 //  Conformant
 //
 //  Copyright © 2025 Prince Ugwuh. All rights reserved.
@@ -23,17 +23,23 @@
 //  SOFTWARE.
 //
 
-import Foundation
+#if canImport(XCTest)
+import XCTest
 
-/// Extension to add architecture verification to SwiftScope
-extension Conformant {
-    public func assertArchitecture(_ defineRules: (ArchitectureRules) -> Void) -> Bool {
+extension XCTestCase {
+    /// Run architecture rules as test assertions
+    /// - Parameter defineRules: Block that defines architecture rules to validate
+    /// - Returns: Whether all rules passed
+    func assertArchitecture(_ defineRules: (ArchitectureRules) -> Void,
+                            file: StaticString = #filePath,
+                            line: UInt = #line) -> Bool {
         let ruleSet = ArchitectureRules()
         defineRules(ruleSet)
 
+        let spec = Conformant.scopeFromProject()
         var context = ArchitectureRuleContext(
-            scope: self,
-            declarations: self.declarations(),
+            scope: spec,
+            declarations: spec.declarations(),
             layers: Array(ruleSet.layers.values)
         )
 
@@ -42,12 +48,19 @@ extension Conformant {
             if !rule.check(context: &context) {
                 allPassed = false
 
-                print("Rule Failed: \(rule.ruleDescription)")
                 for violation in rule.violations {
-                    print("  \(violation.detail) in \(violation.sourceDeclaration.name) at \(violation.sourceDeclaration.filePath):\(violation.sourceDeclaration.location.line)")
+                    let message = """
+                    Rule Failed: \(rule.ruleDescription)
+                    Violation: \(violation.detail)
+                    In: \(violation.sourceDeclaration.name)
+                    At: \(violation.sourceDeclaration.filePath):\(violation.sourceDeclaration.location.line)
+                    """
+                    XCTFail(message, file: file, line: line)
                 }
             }
         }
+
         return allPassed
     }
-} 
+}
+#endif
