@@ -52,5 +52,41 @@ extension Collection where Element: SwiftDeclaration {
     public func assertNotEmpty(message: String = "", file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertTrue(self.assertNotEmpty(), message, file: file, line: line)
     }
+
+    /// Run architecture rules as test assertions
+    /// - Parameter defineRules: Block that defines architecture rules to validate
+    /// - Returns: Whether all rules passed
+    public func assertArchitecture(_ defineRules: (ArchitectureRules) -> Void,
+                            file: StaticString = #filePath,
+                            line: UInt = #line) -> Bool {
+        let ruleSet = ArchitectureRules()
+        defineRules(ruleSet)
+
+        let spec = Conformant.scopeFromProject()
+        var context = ArchitectureRuleContext(
+            scope: spec,
+            declarations: spec.declarations(),
+            layers: Array(ruleSet.layers.values)
+        )
+
+        var allPassed = true
+        for rule in ruleSet.rules {
+            if !rule.check(context: &context) {
+                allPassed = false
+
+                for violation in rule.violations {
+                    let message = """
+                    Rule Failed: \(rule.ruleDescription)
+                    Violation: \(violation.detail)
+                    In: \(violation.sourceDeclaration.name)
+                    At: \(violation.sourceDeclaration.filePath):\(violation.sourceDeclaration.location.line)
+                    """
+                    XCTFail(message, file: file, line: line)
+                }
+            }
+        }
+
+        return allPassed
+    }
 }
 #endif
