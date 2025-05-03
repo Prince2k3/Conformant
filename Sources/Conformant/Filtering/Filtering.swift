@@ -48,23 +48,23 @@ extension Collection where Element: SwiftDeclaration {
     // MARK: - Name Filtering
 
     /// Filter declarations by name suffix
-    public func withNameSuffix(_ suffix: String) -> [Element] {
+    public func withNameEnding(with suffix: String) -> [Element] {
         return self.filter { $0.name.hasSuffix(suffix) }
 
     }
 
     /// Filter declarations by name prefix
-    public func withNamePrefix(_ prefix: String) -> [Element] {
+    public func withNameStarting(with prefix: String) -> [Element] {
         return self.filter { $0.name.hasPrefix(prefix) }
     }
 
     /// Filter declarations by containing name
-    public func withNameContaining(_ substring: String) -> [Element] {
+    public func withName(containing substring: String) -> [Element] {
         return self.filter { $0.name.contains(substring) }
     }
 
     /// Filter declarations by name matching regex
-    public func withNameMatching(_ pattern: String) -> [Element] {
+    public func withName(matching pattern: String) -> [Element] {
         do {
             let regex = try Regex(pattern)
             return self.filter { $0.name.contains(regex) }
@@ -151,7 +151,7 @@ extension Collection where Element: SwiftDeclaration {
     }
 
     /// Filter declarations by residing in a file whose path contains the given string
-    public func inFilePathContaining(_ substring: String) -> [Element] {
+    public func inFilePath(containing substring: String) -> [Element] {
         return self.filter { $0.filePath.contains(substring) }
     }
 
@@ -212,24 +212,24 @@ extension Collection where Element: SwiftDeclaration {
 
 extension Collection where Element == SwiftClassDeclaration {
     /// Filter classes that extend a specific superclass
-    public func extending(class superClassName: String) -> [Element] {
+    public func extends(class superClassName: String) -> [Element] {
         return self.filter { $0.extends(class: superClassName) }
     }
 
     /// Filter classes that implement a specific protocol
-    public func implementing(protocol protocolName: String) -> [Element] {
+    public func implements(protocol protocolName: String) -> [Element] {
         return self.filter { $0.implements(protocol: protocolName) }
     }
 
     /// Filter classes that implement any of the specified protocols
-    public func implementingAny(protocols protocolNames: String...) -> [Element] {
+    public func implementsAny(protocols protocolNames: String...) -> [Element] {
         return self.filter { classDecl in
             protocolNames.contains { classDecl.implements(protocol: $0) }
         }
     }
 
     /// Filter classes that implement all of the specified protocols
-    public func implementingAll(protocols protocolNames: String...) -> [Element] {
+    public func implementsAll(protocols protocolNames: String...) -> [Element] {
         return self.filter { classDecl in
             protocolNames.allSatisfy { classDecl.implements(protocol: $0) }
         }
@@ -293,8 +293,8 @@ extension Collection where Element == SwiftStructDeclaration {
 
 extension Collection where Element == SwiftProtocolDeclaration {
     /// Filter protocols that inherit from a specific protocol
-    public func inheriting(protocol protocolName: String) -> [Element] {
-        return self.filter { $0.inherits(protocol: protocolName) }
+    public func inherits(from protocolName: String) -> [Element] {
+        return self.filter { $0.inherits(from: protocolName) }
     }
 
     /// Filter protocols that require a specific method

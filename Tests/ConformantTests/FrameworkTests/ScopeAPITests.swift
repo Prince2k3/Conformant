@@ -281,13 +281,13 @@ final class ScopeAPITests: XCTestCase {
 
         let scope = Conformant.scopeFromDirectory(testFilesDirectory)
 
-        let testClasses = scope.classes().withNamePrefix("Test")
+        let testClasses = scope.classes().withNameStarting(with: "Test")
         XCTAssertEqual(testClasses.count, 2, "Should find 2 classes with 'Test' prefix")
 
-        let configStructs = scope.structs().withNameSuffix("Configuration")
+        let configStructs = scope.structs().withNameEnding(with: "Configuration")
         XCTAssertEqual(configStructs.count, 1, "Should find 1 struct with 'Configuration' suffix")
 
-        let userTypes = scope.types().withNameContaining("User")
+        let userTypes = scope.types().withName(containing: "User")
         XCTAssertEqual(userTypes.count, 3, "Should find 3 types containing 'User'")
 
         // Filter types by regex

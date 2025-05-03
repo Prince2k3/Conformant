@@ -59,7 +59,7 @@ public class SwiftProtocolDeclaration: SwiftDeclaration {
         self.methodRequirements = methodRequirements
     }
 
-    public func inherits(protocol protocolName: String) -> Bool {
+    public func inherits(from protocolName: String) -> Bool {
         return inheritedProtocols.contains(protocolName)
     }
 }

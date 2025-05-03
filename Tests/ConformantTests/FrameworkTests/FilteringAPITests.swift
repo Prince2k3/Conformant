@@ -13,13 +13,13 @@ final class FilteringAPITests: XCTestCase {
         let scope = Conformant.scopeFromDirectory(testFilesDirectory)
 
         // Test withNameSuffix
-        let viewControllers: [SwiftClassDeclaration] = scope.classes().withNameSuffix("ViewController")
+        let viewControllers: [SwiftClassDeclaration] = scope.classes().withNameEnding(with: "ViewController")
         XCTAssertEqual(viewControllers.count, 2, "Should find 2 view controller classes")
         XCTAssertTrue(viewControllers.contains { $0.name == "BaseViewController" }, "Should find BaseViewController")
         XCTAssertTrue(viewControllers.contains { $0.name == "HomeViewController" }, "Should find HomeViewController")
         
         // Test withNamePrefix
-        let networkClasses = scope.declarations().withNamePrefix("Network")
+        let networkClasses = scope.declarations().withNameStarting(with: "Network")
         XCTAssertEqual(networkClasses.count, 4, "Should find 4 Network* declarations")
         XCTAssertTrue(networkClasses.contains { $0.name == "NetworkService" }, "Should find NetworkService")
         XCTAssertTrue(networkClasses.contains { $0.name == "NetworkConfiguration" }, "Should find NetworkConfiguration")
@@ -27,7 +27,7 @@ final class FilteringAPITests: XCTestCase {
         XCTAssertTrue(networkClasses.contains { $0.name == "NetworkManager" }, "Should find NetworkManager")
 
         // Test withNameContaining
-        let userDeclarations = scope.declarations().withNameContaining("User")
+        let userDeclarations = scope.declarations().withName(containing: "User")
         XCTAssertEqual(userDeclarations.count, 4, "Should find 4 declarations containing 'User'")
 
         // Test withName
@@ -42,7 +42,7 @@ final class FilteringAPITests: XCTestCase {
         XCTAssertTrue(specificModels.contains { $0.name == "Product" }, "Should find Product by name")
         
         // Test withNameMatching
-        let viewModelPattern = scope.declarations().withNameMatching(".*ViewModel")
+        let viewModelPattern = scope.declarations().withName(matching: ".*ViewModel")
         XCTAssertEqual(viewModelPattern.count, 2, "Should find 2 view models")
         XCTAssertTrue(viewModelPattern.contains { $0.name == "ProductViewModel" }, "Should find ProductViewModel")
         XCTAssertTrue(viewModelPattern.contains { $0.name == "ViewModel" }, "Should find ViewModel protocol")
@@ -133,7 +133,7 @@ final class FilteringAPITests: XCTestCase {
                      "HomeViewController should be in Classes.swift")
         
         // Test inFilePathContaining
-        let enumsDeclarations = scope.declarations().inFilePathContaining("Enums.swift")
+        let enumsDeclarations = scope.declarations().inFilePath(containing: "Enums.swift")
         XCTAssertTrue(enumsDeclarations.count > 0, "Should find declarations in Enums.swift")
         XCTAssertTrue(enumsDeclarations.contains { $0.name == "NetworkError" }, 
                      "NetworkError should be in Enums.swift")
@@ -157,7 +157,7 @@ final class FilteringAPITests: XCTestCase {
         let classes = scope.classes()
         
         // Test extending
-        let viewControllerSubclasses = classes.extending(class: "BaseViewController")
+        let viewControllerSubclasses = classes.extends(class: "BaseViewController")
         XCTAssertEqual(viewControllerSubclasses.count, 1, "Should find 1 subclass of BaseViewController")
         XCTAssertEqual(viewControllerSubclasses.first?.name, "HomeViewController", 
                       "HomeViewController should extend BaseViewController")
@@ -248,7 +248,7 @@ final class FilteringAPITests: XCTestCase {
         let protocols = scope.protocols()
         
         // Test inheriting
-        let repoProtocols = protocols.inheriting(protocol: "Repository")
+        let repoProtocols = protocols.inherits(from: "Repository")
         XCTAssertEqual(repoProtocols.count, 1, "Should find 1 protocol inheriting from Repository")
         XCTAssertEqual(repoProtocols.first?.name, "UserRepository", 
                       "UserRepository should inherit from Repository")
@@ -498,7 +498,7 @@ final class FilteringAPITests: XCTestCase {
         
         // Test using and() for custom predicates
         let viewControllersWithViewModel = scope.classes()
-            .withNameSuffix("ViewController")
+            .withNameEnding(with: "ViewController")
             .and { $0.hasProperty(named: "viewModel") }
         
         XCTAssertEqual(viewControllersWithViewModel.count, 1, "Should find 1 view controller with viewModel property")
@@ -518,9 +518,9 @@ final class FilteringAPITests: XCTestCase {
         
         // Combined filter across multiple declaration types
         let allNetworkRelated = scope.declarations()
-            .withNameContaining("Network")
-            .inFilePathContaining("Classes.swift")
-        
+            .withName(containing: "Network")
+            .inFilePath(containing: "Classes.swift")
+
         XCTAssertTrue(allNetworkRelated.count > 0, "Should find network-related declarations in Classes.swift")
         XCTAssertTrue(allNetworkRelated.contains { $0.name == "NetworkService" }, 
                      "Should find NetworkService in Classes.swift")
@@ -537,16 +537,15 @@ final class FilteringAPITests: XCTestCase {
         let scope = Conformant.scopeFromDirectory(testFilesDirectory)
 
         // Test empty collections
-        let nonExistentPrefixClasses = scope.classes().withNamePrefix("NonExistent")
+        let nonExistentPrefixClasses = scope.classes().withNameStarting(with: "NonExistent")
         XCTAssertEqual(nonExistentPrefixClasses.count, 0, "Should find 0 classes with non-existent prefix")
         
         // Test assertions on empty collections
         let emptyAssertAll = nonExistentPrefixClasses.assertEmpty()
         XCTAssertTrue(emptyAssertAll, "assertEmpty on empty collection should return true")
 
-
         // Test invalid regex
-        let invalidRegexMatches = scope.declarations().withNameMatching("[")
+        let invalidRegexMatches = scope.declarations().withName(matching: "[")
         XCTAssertEqual(invalidRegexMatches.count, 0, "Invalid regex should return empty collection")
         
         // Test case sensitivity
