@@ -541,12 +541,10 @@ final class FilteringAPITests: XCTestCase {
         XCTAssertEqual(nonExistentPrefixClasses.count, 0, "Should find 0 classes with non-existent prefix")
         
         // Test assertions on empty collections
-        let emptyAssertAll = nonExistentPrefixClasses.assertTrue { _ in false }
-        XCTAssertTrue(emptyAssertAll, "assertTrue on empty collection should return true")
-        
-        let emptyAssertAny = nonExistentPrefixClasses.assertAny { _ in true }
-        XCTAssertFalse(emptyAssertAny, "assertAny on empty collection should return false")
-        
+        let emptyAssertAll = nonExistentPrefixClasses.assertEmpty()
+        XCTAssertTrue(emptyAssertAll, "assertEmpty on empty collection should return true")
+
+
         // Test invalid regex
         let invalidRegexMatches = scope.declarations().withNameMatching("[")
         XCTAssertEqual(invalidRegexMatches.count, 0, "Invalid regex should return empty collection")

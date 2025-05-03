@@ -526,8 +526,8 @@ final class PackageSwiftParserTests: XCTestCase {
 
 // MARK: - Additional Test Extensions
 
-extension PackageSwiftParser.Product.ProductType: Equatable {
-    public static func == (lhs: PackageSwiftParser.Product.ProductType, rhs: PackageSwiftParser.Product.ProductType) -> Bool {
+extension PackageFile.Product.ProductType: Equatable {
+    public static func == (lhs: PackageFile.Product.ProductType, rhs: PackageFile.Product.ProductType) -> Bool {
         switch (lhs, rhs) {
         case (.executable, .executable):
             return true
@@ -539,8 +539,8 @@ extension PackageSwiftParser.Product.ProductType: Equatable {
     }
 }
 
-extension PackageSwiftParser.Product.ProductType.LibraryType: Equatable {
-    public static func == (lhs: PackageSwiftParser.Product.ProductType.LibraryType, rhs: PackageSwiftParser.Product.ProductType.LibraryType) -> Bool {
+extension PackageFile.Product.ProductType.LibraryType: Equatable {
+    public static func == (lhs: PackageFile.Product.ProductType.LibraryType, rhs: PackageFile.Product.ProductType.LibraryType) -> Bool {
         switch (lhs, rhs) {
         case (.dynamic, .dynamic), (.static, .static), (.automatic, .automatic):
             return true
@@ -550,8 +550,8 @@ extension PackageSwiftParser.Product.ProductType.LibraryType: Equatable {
     }
 }
 
-extension PackageSwiftParser.Target.TargetType: Equatable {
-    public static func == (lhs: PackageSwiftParser.Target.TargetType, rhs: PackageSwiftParser.Target.TargetType) -> Bool {
+extension PackageFile.Target.TargetType: Equatable {
+    public static func == (lhs: PackageFile.Target.TargetType, rhs: PackageFile.Target.TargetType) -> Bool {
         switch (lhs, rhs) {
         case (.regular, .regular), (.test, .test), (.system, .system), (.binary, .binary), (.plugin, .plugin):
             return true
@@ -561,8 +561,8 @@ extension PackageSwiftParser.Target.TargetType: Equatable {
     }
 }
 
-extension PackageSwiftParser.Resource.Rule: Equatable {
-    public static func == (lhs: PackageSwiftParser.Resource.Rule, rhs: PackageSwiftParser.Resource.Rule) -> Bool {
+extension PackageFile.Resource.Rule: Equatable {
+    public static func == (lhs: PackageFile.Resource.Rule, rhs: PackageFile.Resource.Rule) -> Bool {
         switch (lhs, rhs) {
         case (.process, .process), (.copy, .copy):
             return true

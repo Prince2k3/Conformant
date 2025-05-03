@@ -26,7 +26,7 @@
 #if canImport(XCTest)
 import XCTest
 
-extension XCTestCase {
+public extension XCTestCase {
     /// Run architecture rules as test assertions
     /// - Parameter defineRules: Block that defines architecture rules to validate
     /// - Returns: Whether all rules passed
