@@ -37,4 +37,5 @@ public enum SwiftModifier: String {
     case `open`
     case `mutating`
     case `override`
+    case `weak`
 }

@@ -47,7 +47,7 @@ public struct PackageSwiftParser {
     }
 
     /// Parse the Package.swift file sequentially and return a Package object
-    public func parse() throws -> Package {
+    public func parse() throws -> PackageFile {
         guard let packageInitRange = originalContent.firstRange(of: /Package\s*\(/) else {
             throw ParseError.packageInitializerNotFound
         }
@@ -61,10 +61,10 @@ public struct PackageSwiftParser {
         var currentSubstring = contentToParse[..<packageEndIndex]
 
         var name: String? = nil
-        var platforms: [Package.Platform] = []
-        var products: [Package.Product] = []
-        var dependencies: [Package.Dependency] = []
-        var targets: [Package.Target] = []
+        var platforms: [PackageFile.Platform] = []
+        var products: [PackageFile.Product] = []
+        var dependencies: [PackageFile.Dependency] = []
+        var targets: [PackageFile.Target] = []
         var swiftLanguageVersions: [String] = []
         var cLanguageStandard: String? = nil
         var cxxLanguageStandard: String? = nil
@@ -136,7 +136,7 @@ public struct PackageSwiftParser {
             throw ParseError.missingRequiredParameter("name")
         }
 
-        return Package(
+        return PackageFile(
             name: finalName,
             platforms: platforms,
             products: products,
@@ -397,8 +397,8 @@ public struct PackageSwiftParser {
         return (value, remaining)
     }
 
-    private func extractPlatforms(from arrayContent: Substring) -> [Package.Platform] {
-        var platforms: [Package.Platform] = []
+    private func extractPlatforms(from arrayContent: Substring) -> [PackageFile.Platform] {
+        var platforms: [PackageFile.Platform] = []
         // Use the helper to split array content like "[.macOS(.v12), .iOS(.v15)]" into entries
         let platformEntries = splitBlockIntoEntries(String(arrayContent))
 
@@ -452,7 +452,7 @@ public struct PackageSwiftParser {
 
                 // --- Append platform if version was successfully parsed ---
                 if let finalVersion = version {
-                    platforms.append(Package.Platform(name: name, version: finalVersion))
+                    platforms.append(PackageFile.Platform(name: name, version: finalVersion))
                 } else {
                     // Log a warning if the version format inside the parentheses wasn't recognized
                     print("Warning: Could not parse version from platform entry: \(entry)")
@@ -465,8 +465,8 @@ public struct PackageSwiftParser {
         return platforms
     }
 
-    private func extractProducts(from arrayContent: Substring) -> [Package.Product] {
-        var products: [Package.Product] = []
+    private func extractProducts(from arrayContent: Substring) -> [PackageFile.Product] {
+        var products: [PackageFile.Product] = []
         let productEntries = splitBlockIntoEntries(String(arrayContent))
 
         for entry in productEntries {
@@ -485,13 +485,13 @@ public struct PackageSwiftParser {
         return products
     }
 
-    private func parseLibraryProduct(_ entry: String) -> Package.Product? {
+    private func parseLibraryProduct(_ entry: String) -> PackageFile.Product? {
         let namePattern = /name\s*:\s*"([^"]+)"/
         guard let nameMatch = entry.firstMatch(of: namePattern) else { return nil }
         let name = String(nameMatch.1)
 
         // Determine product type
-        let productType: Package.Product.ProductType
+        let productType: PackageFile.Product.ProductType
         if entry.contains(".dynamic") {
             productType = .library(.dynamic)
         } else if entry.contains(".static") {
@@ -502,17 +502,17 @@ public struct PackageSwiftParser {
 
         let targets = extractTargetsFromEntry(entry)
 
-        return Package.Product(name: name, type: productType, targets: targets)
+        return PackageFile.Product(name: name, type: productType, targets: targets)
     }
 
-    private func parseExecutableProduct(_ entry: String) -> Package.Product? {
+    private func parseExecutableProduct(_ entry: String) -> PackageFile.Product? {
         let namePattern = /name\s*:\s*"([^"]+)"/
         guard let nameMatch = entry.firstMatch(of: namePattern) else { return nil }
         let name = String(nameMatch.1)
 
         let targets = extractTargetsFromEntry(entry)
 
-        return Package.Product(name: name, type: .executable, targets: targets)
+        return PackageFile.Product(name: name, type: .executable, targets: targets)
     }
 
     private func extractTargetsFromEntry(_ entry: String) -> [String] {
@@ -540,8 +540,8 @@ public struct PackageSwiftParser {
         return targets
     }
 
-    private func extractDependencies(from arrayContent: Substring) -> [Package.Dependency] {
-        var dependencies: [Package.Dependency] = []
+    private func extractDependencies(from arrayContent: Substring) -> [PackageFile.Dependency] {
+        var dependencies: [PackageFile.Dependency] = []
         let dependencyEntries = splitBlockIntoEntries(String(arrayContent))
 
         for entry in dependencyEntries {
@@ -554,7 +554,7 @@ public struct PackageSwiftParser {
         return dependencies
     }
 
-    private func parseSingleDependency(_ entry: String) -> Package.Dependency? {
+    private func parseSingleDependency(_ entry: String) -> PackageFile.Dependency? {
         let urlPattern = /url\s*:\s*"([^"]+)"/
         guard let urlMatch = entry.firstMatch(of: urlPattern) else {
             // Note: This currently doesn't handle unlabeled URLs like .package("github.com/...", ...)
@@ -568,7 +568,7 @@ public struct PackageSwiftParser {
 
         // Check the entire entry string for keywords and patterns indicating the requirement type.
         // Order matters: check for more specific keywords (.exact, .branch, etc.) before general ones (from:).
-        let requirement: Package.Dependency.RequirementType
+        let requirement: PackageFile.Dependency.RequirementType
 
         if entry.contains(".exact(") {
             requirement = extractExactRequirement(entry)
@@ -593,10 +593,10 @@ public struct PackageSwiftParser {
             requirement = .branch("main")
         }
 
-        return Package.Dependency(name: name, url: url, requirement: requirement)
+        return PackageFile.Dependency(name: name, url: url, requirement: requirement)
     }
 
-    private func extractExactRequirement(_ entry: String) -> Package.Dependency.RequirementType {
+    private func extractExactRequirement(_ entry: String) -> PackageFile.Dependency.RequirementType {
         let versionPattern = /\.exact\(\s*"([^"]+)"\s*\)/
         guard let match = entry.firstMatch(of: versionPattern) else {
             return .exact("unknown")
@@ -604,7 +604,7 @@ public struct PackageSwiftParser {
         return .exact(String(match.1))
     }
 
-    private func extractUpToNextMajorRequirement(_ entry: String) -> Package.Dependency.RequirementType {
+    private func extractUpToNextMajorRequirement(_ entry: String) -> PackageFile.Dependency.RequirementType {
         let versionPattern = /\.upToNextMajor\(\s*from:\s*"([^"]+)"\s*\)/
         guard let match = entry.firstMatch(of: versionPattern) else {
             return .upToNextMajor("unknown")
@@ -612,7 +612,7 @@ public struct PackageSwiftParser {
         return .upToNextMajor(String(match.1))
     }
 
-    private func extractUpToNextMinorRequirement(_ entry: String) -> Package.Dependency.RequirementType {
+    private func extractUpToNextMinorRequirement(_ entry: String) -> PackageFile.Dependency.RequirementType {
         let versionPattern = /\.upToNextMinor\(\s*from:\s*"([^"]+)"\s*\)/
         guard let match = entry.firstMatch(of: versionPattern) else {
             return .upToNextMinor("unknown")
@@ -620,7 +620,7 @@ public struct PackageSwiftParser {
         return .upToNextMinor(String(match.1))
     }
 
-    private func extractBranchRequirement(_ entry: String) -> Package.Dependency.RequirementType {
+    private func extractBranchRequirement(_ entry: String) -> PackageFile.Dependency.RequirementType {
         let branchPattern = /\.branch\(\s*"([^"]+)"\s*\)/
         guard let match = entry.firstMatch(of: branchPattern) else {
             return .branch("unknown")
@@ -628,7 +628,7 @@ public struct PackageSwiftParser {
         return .branch(String(match.1))
     }
 
-    private func extractRevisionRequirement(_ entry: String) -> Package.Dependency.RequirementType {
+    private func extractRevisionRequirement(_ entry: String) -> PackageFile.Dependency.RequirementType {
         let revisionPattern = /\.revision\(\s*"([^"]+)"\s*\)/
         guard let match = entry.firstMatch(of: revisionPattern) else {
             return .revision("unknown")
@@ -636,8 +636,8 @@ public struct PackageSwiftParser {
         return .revision(String(match.1))
     }
 
-    private func extractTargets(from arrayContent: Substring) -> [Package.Target] {
-        var targets: [Package.Target] = []
+    private func extractTargets(from arrayContent: Substring) -> [PackageFile.Target] {
+        var targets: [PackageFile.Target] = []
         let targetEntries = splitBlockIntoEntries(String(arrayContent))
 
         for entry in targetEntries {
@@ -650,8 +650,8 @@ public struct PackageSwiftParser {
         return targets
     }
 
-    private func parseSingleTarget(_ entry: String) -> Package.Target? {
-        let targetType: Package.Target.TargetType
+    private func parseSingleTarget(_ entry: String) -> PackageFile.Target? {
+        let targetType: PackageFile.Target.TargetType
 
         if entry.contains(".testTarget") {
             targetType = .test
@@ -690,7 +690,7 @@ public struct PackageSwiftParser {
         let sources = extractStringArrayParameter(named: "sources", from: Substring(entry))
         let resources = extractResources(from: Substring(entry))
 
-        return Package.Target(
+        return PackageFile.Target(
             name: name,
             type: targetType,
             dependencies: dependencies,
@@ -701,8 +701,8 @@ public struct PackageSwiftParser {
         )
     }
 
-    private func extractTargetDependencies(from targetParamsContent: Substring) -> [Package.TargetDependency] {
-        var dependencies: [Package.TargetDependency] = []
+    private func extractTargetDependencies(from targetParamsContent: Substring) -> [PackageFile.TargetDependency] {
+        var dependencies: [PackageFile.TargetDependency] = []
 
         guard let depLabelRange = targetParamsContent.range(of: "dependencies:") else {
             return []
@@ -748,7 +748,7 @@ public struct PackageSwiftParser {
         return dependencies
     }
 
-    private func parseProductDependency(_ entry: String) -> Package.TargetDependency? {
+    private func parseProductDependency(_ entry: String) -> PackageFile.TargetDependency? {
         let productPattern = /\.product\(\s*name:\s*"([^"]+)"(?:,\s*package:\s*"([^"]+)")?\s*\)/
         guard let match = entry.firstMatch(of: productPattern) else {
             return nil
@@ -758,7 +758,7 @@ public struct PackageSwiftParser {
         return .product(name: name, package: package)
     }
 
-    private func parseTargetDependency(_ entry: String) -> Package.TargetDependency? {
+    private func parseTargetDependency(_ entry: String) -> PackageFile.TargetDependency? {
         let targetPattern = /\.target\(\s*name:\s*"([^"]+)"\s*\)/
         guard let match = entry.firstMatch(of: targetPattern) else { return nil }
         let name = String(match.1)
@@ -793,8 +793,8 @@ public struct PackageSwiftParser {
         return patterns
     }
 
-    private func extractResources(from targetParamsContent: Substring) -> [Package.Resource] {
-        var resources: [Package.Resource] = []
+    private func extractResources(from targetParamsContent: Substring) -> [PackageFile.Resource] {
+        var resources: [PackageFile.Resource] = []
 
         guard let resLabelRange = targetParamsContent.range(of: "resources:") else {
             return []
@@ -823,12 +823,12 @@ public struct PackageSwiftParser {
         let resourceEntries = splitBlockIntoEntries(trimmedContent)
 
         for resEntry in resourceEntries {
-            let rule: Package.Resource.Rule = resEntry.contains(".process") ? .process : .copy
+            let rule: PackageFile.Resource.Rule = resEntry.contains(".process") ? .process : .copy
             let pathPattern = /\.(?:process|copy)\(\s*"([^"]+)"\s*\)/
 
             if let pathMatch = resEntry.firstMatch(of: pathPattern) {
                 let path = String(pathMatch.1)
-                resources.append(Package.Resource(path: path, rule: rule))
+                resources.append(PackageFile.Resource(path: path, rule: rule))
             } else {
                 print("Warning: Could not parse resource entry format: \(resEntry)")
             }

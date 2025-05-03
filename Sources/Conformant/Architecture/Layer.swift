@@ -34,7 +34,7 @@ public struct Layer {
     // Used for import-based dependency checking
     private let modulesInLayer: Set<String>
 
-    @MainActor private static var packageCache: [String: Package] = [:]
+    @MainActor private static var packageCache: [String: PackageFile] = [:]
 
     /// Initialize a Layer with a name and a regex pattern to match file paths
     public init(name: String, identifierPattern: String) {
@@ -120,7 +120,7 @@ public struct Layer {
             return false
         }
 
-        let package: Package
+        let package: PackageFile
 
         if let cachedPackage = packageCache[packageSwiftPath] {
             package = cachedPackage
