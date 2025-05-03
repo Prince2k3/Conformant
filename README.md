@@ -54,22 +54,22 @@ class CodeStructureTests: XCTestCase {
         // Test that all ViewControllers follow the naming convention
         let scope = SwiftScope.fromProject()
         
-        let viewControllers = scope.classes().filter { $0.name.hasSuffix("ViewController") }
+        let viewControllers = scope.classes().withNameSuffix("ViewController")
         
-        XCTAssertTrue(viewControllers.assertTrue { $0.hasMethod(named: "viewDidLoad") },
-                      "All ViewControllers should implement viewDidLoad")
+        viewControllers.assertTrue(message: "All ViewControllers should implement viewDidLoad") { $0.hasMethod(named: "viewDidLoad") }
+        
     }
     
     func testRepositoryPattern() {
         // Test that repository implementations follow the repository pattern
         let scope = SwiftScope.fromProject()
         
-        let repositories = scope.classes().filter { $0.name.hasSuffix("RepositoryImpl") }
+        let repositories = scope.classes().withNameSuffix("RepositoryImpl")
         
-        XCTAssertTrue(repositories.assertTrue { repository in
+        repositories.assertTrue(message: "All repository implementations should implement a repository protocol") { repository in
             // Should implement a repository protocol
             return repository.protocols.contains { $0.hasSuffix("Repository") }
-        }, "All repository implementations should implement a repository protocol")
+        }
     }
 }
 ```
@@ -181,12 +181,12 @@ class ImportTests: XCTestCase {
         let scope = SwiftScope.fromProject()
         
         // Get all files that import UIKit
-        let uiKitImports = scope.imports().filter { $0.name == "UIKit" }
+        let uiKitImports = scope.imports().withName("UIKit")
         
         // Check that they're only in the UI layer
-        XCTAssertTrue(uiKitImports.assertTrue { import in
+        uiKitImports.assertTrue(message: "UIKit should only be imported in the UI layer") { import in
             import.filePath.contains("/UI/") || import.filePath.contains("/Views/")
-        }, "UIKit should only be imported in the UI layer")
+        }
     }
     
     func testNoUIKitInDomain() {
@@ -194,11 +194,9 @@ class ImportTests: XCTestCase {
         let domainScope = SwiftScope.fromDirectory("Sources/Domain")
         
         // Check for imports of UI frameworks
-        let uiImports = domainScope.imports().filter { 
+        let uiImports = domainScope.imports().assertEmpty(message: "Domain layer should not import UI frameworks") { 
             $0.name == "UIKit" || $0.name == "SwiftUI"
         }
-        
-        XCTAssertTrue(uiImports.isEmpty, "Domain layer should not import UI frameworks")
     }
 }
 ```
@@ -447,8 +445,8 @@ Analyze type dependencies in your codebase:
 let dependencies = classDeclaration.dependencies
 
 // Filter by dependency type
-let inheritanceDeps = dependencies.filter { $0.kind == .inheritance }
-let importDeps = dependencies.filter { $0.kind == .import }
+let inheritanceDeps = dependencies.inheritances()
+let importDeps = dependencies.imports()
 ```
 
 ## Architecture Progress Reports
