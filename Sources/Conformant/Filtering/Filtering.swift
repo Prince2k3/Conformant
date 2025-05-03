@@ -162,6 +162,20 @@ extension Collection where Element: SwiftDeclaration {
 
     // MARK: - Dependency Filtering
 
+    /// Filter declarations that are import types
+    public func imports() -> [Element] {
+        return self.filter { declaration in
+            declaration.dependencies.contains { $0.kind == .import }
+        }
+    }
+
+    /// Filter declarations that are inheritance types
+    public func inheritances() -> [Element] {
+        return self.filter { declaration in
+            declaration.dependencies.contains { $0.kind == .inheritance }
+        }
+    }
+
     /// Filter declarations that depend on a specific type
     public func dependingOn(type: String) -> [Element] {
         return self.filter { declaration in
