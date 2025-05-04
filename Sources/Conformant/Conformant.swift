@@ -111,7 +111,7 @@ public struct Conformant {
 
         guard let enumerator = fileManager.enumerator(
             at: rootURL,
-            includingPropertiesForKeys: nil, // Can add [.isRegularFileKey] for efficiency
+            includingPropertiesForKeys: nil, 
             options: [.skipsHiddenFiles, .skipsPackageDescendants],
             errorHandler: { url, error -> Bool in
                 print("Directory enumerator error at \(url): \(error)")

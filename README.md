@@ -277,10 +277,10 @@ The Filtering API provides a collection of extension methods on Swift collection
 |--------|-------------|
 | `withName(_:)` | Exact name match |
 | `withNames(_:)` | Match any name in the provided array |
-| `withNamePrefix(_:)` | Prefix match |
-| `withNameSuffix(_:)` | Suffix match |
-| `withNameContaining(_:)` | Contains substring |
-| `withNameMatching(_:)` | Regex pattern match |
+| `withNameStarting(with:)` | Prefix match |
+| `withNameEnding(with:)` | Suffix match |
+| `withName(containing:)` | Contains substring |
+| `withName(matching:)` | Regex pattern match |
 
 ### Modifier Filters
 
@@ -306,7 +306,7 @@ The Filtering API provides a collection of extension methods on Swift collection
 | Method | Description |
 |--------|-------------|
 | `inFile(_:)` | In specific file |
-| `inFilePathContaining(_:)` | In file with path containing substring |
+| `inFilePath(containing:)` | In file with path containing substring |
 | `inPackage(_:)` | In specific package |
 
 ### Dependency Filters

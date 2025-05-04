@@ -53,8 +53,6 @@ public struct SwiftFile {
     var importDependencies: [SwiftDependency] {
         return imports.map {
             SwiftDependency(name: $0.name, kind: .import, location: $0.location)
-            
-            // SwiftDependency(name: $0.fullPath, kind: .import, location: $0.location)
         }
     }
 }
