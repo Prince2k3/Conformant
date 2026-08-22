@@ -3,28 +3,26 @@ fixture: NestedTypes.swift
 ## imports (0)
   <none>
 
-## classes (0)
-  <none>
+## classes (1)
+- Outer.DeeplyNested @11:5
+    parent: Outer
+    superclass: <none>
+    protocols: []
+    modifiers: [final]
+    annotations: []
+    dependencies: []
+    properties:
+      <none>
+    methods:
+      <none>
 
-## structs (1)
+## structs (3)
 - Outer @1:1
     protocols: []
     modifiers: [public]
     annotations: []
-    dependencies: [Inner/typeUsage@17:16, NetworkClient/typeUsage@13:25, UserRepository/typeUsage@3:25]
+    dependencies: [Inner/typeUsage@17:16]
     properties:
-      - repository: UserRepository @3:13
-          computed: false
-          initialValue: <none>
-          modifiers: []
-          annotations: []
-          dependencies: [UserRepository/typeUsage@3:25]
-      - client: NetworkClient @13:17
-          computed: false
-          initialValue: <none>
-          modifiers: []
-          annotations: []
-          dependencies: [NetworkClient/typeUsage@13:25]
       - inner: Inner @17:9
           computed: false
           initialValue: <none>
@@ -33,14 +31,72 @@ fixture: NestedTypes.swift
           dependencies: [Inner/typeUsage@17:16]
     methods:
       <none>
+- Outer.Inner @2:5
+    parent: Outer
+    protocols: []
+    modifiers: [public]
+    annotations: []
+    dependencies: [UserRepository/typeUsage@3:25]
+    properties:
+      - repository: UserRepository @3:13
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [UserRepository/typeUsage@3:25]
+    methods:
+      <none>
+- Outer.DeeplyNested.EvenDeeper @12:9
+    parent: Outer.DeeplyNested
+    protocols: []
+    modifiers: []
+    annotations: []
+    dependencies: [NetworkClient/typeUsage@13:25]
+    properties:
+      - client: NetworkClient @13:17
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [NetworkClient/typeUsage@13:25]
+    methods:
+      <none>
 
-## enums (0)
-  <none>
+## enums (1)
+- Outer.Kind @6:5
+    parent: Outer
+    rawType: <none>
+    protocols: []
+    modifiers: [public]
+    annotations: []
+    dependencies: []
+    cases:
+      - primary
+      - secondary
+    properties:
+      <none>
+    methods:
+      <none>
 
 ## protocols (0)
   <none>
 
+## actors (0)
+  <none>
+
 ## extensions (0)
+  <none>
+
+## typealiases (0)
+  <none>
+
+## macros (0)
+  <none>
+
+## operators (0)
+  <none>
+
+## precedence groups (0)
   <none>
 
 ## top-level functions (0)

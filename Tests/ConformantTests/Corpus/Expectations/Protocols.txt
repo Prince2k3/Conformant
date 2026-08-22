@@ -17,7 +17,7 @@ fixture: Protocols.swift
     inherits: [AnyObject, Sendable]
     modifiers: [public]
     annotations: []
-    dependencies: [AnyObject/conformance@1:29, Identifier/typeUsage@8:21, Int/typeUsage@5:16, Item/typeUsage@8:46, Item/typeUsage@9:23, Sendable/conformance@1:40, String/typeUsage@6:15]
+    dependencies: [AnyObject/conformance@1:29, Error/conformance@3:29, Identifier/typeUsage@8:21, Int/typeUsage@5:16, Item/typeUsage@8:46, Item/typeUsage@9:23, Sendable/conformance@1:40, String/typeUsage@6:15]
     properties:
       - count: Int @5:9
           computed: true
@@ -48,6 +48,19 @@ fixture: Protocols.swift
           modifiers: []
           annotations: []
           dependencies: [Item/typeUsage@9:23]
+    associatedTypes:
+      - Item @2:5
+          inherits: []
+          default: <none>
+          modifiers: []
+          annotations: []
+          dependencies: []
+      - Failure @3:5
+          inherits: [Error]
+          default: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Error/conformance@3:29]
 - Marker @12:1
     inherits: []
     modifiers: []
@@ -58,7 +71,22 @@ fixture: Protocols.swift
     methods:
       <none>
 
+## actors (0)
+  <none>
+
 ## extensions (0)
+  <none>
+
+## typealiases (0)
+  <none>
+
+## macros (0)
+  <none>
+
+## operators (0)
+  <none>
+
+## precedence groups (0)
   <none>
 
 ## top-level functions (0)

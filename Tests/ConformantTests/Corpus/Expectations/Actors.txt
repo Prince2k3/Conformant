@@ -15,7 +15,76 @@ fixture: Actors.swift
 ## protocols (0)
   <none>
 
+## actors (2)
+- BankAccount @1:1
+    protocols: []
+    modifiers: [public]
+    annotations: []
+    dependencies: [AccountID/typeUsage@14:40, Decimal/typeUsage@2:26, Decimal/typeUsage@9:35, Receipt/typeUsage@9:57, TransactionLedger/typeUsage@3:25, TransactionLedger/typeUsage@5:25]
+    properties:
+      - balance: Decimal @2:17
+          computed: false
+          initialValue: 0
+          modifiers: [private]
+          annotations: []
+          dependencies: [Decimal/typeUsage@2:26]
+      - ledger: TransactionLedger @3:17
+          computed: false
+          initialValue: <none>
+          modifiers: [private]
+          annotations: []
+          dependencies: [TransactionLedger/typeUsage@3:25]
+      - identifier: AccountID @14:28
+          computed: true
+          initialValue: <none>
+          modifiers: [nonisolated, public]
+          annotations: []
+          dependencies: [AccountID/typeUsage@14:40]
+    methods:
+      - init @5:5
+          parameters: [ledger: TransactionLedger]
+          returns: <none>
+          effects: async=false throws=false rethrows=false
+          hasBody: true
+          modifiers: [public]
+          annotations: []
+          dependencies: [TransactionLedger/typeUsage@5:25]
+      - deposit @9:5
+          parameters: [amount: Decimal]
+          returns: Receipt
+          effects: async=true throws=true rethrows=false
+          hasBody: true
+          modifiers: [public]
+          annotations: []
+          dependencies: [Decimal/typeUsage@9:35, Receipt/typeUsage@9:57]
+- BackgroundActor @17:1
+    protocols: []
+    modifiers: []
+    annotations: [@globalActor]
+    dependencies: [BackgroundActor/typeUsage@19:25]
+    properties:
+      - shared: BackgroundActor @19:16
+          computed: false
+          initialValue: BackgroundActor()
+          modifiers: [static]
+          annotations: []
+          dependencies: [BackgroundActor/typeUsage@19:25]
+    methods:
+      <none>
+
 ## extensions (0)
+  <none>
+
+## typealiases (0)
+  <none>
+
+## macros (0)
+  <none>
+
+## operators (0)
+  <none>
+
+## precedence groups (0)
   <none>
 
 ## top-level functions (0)

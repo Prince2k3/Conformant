@@ -1,5 +1,5 @@
 //
-//  SwiftExtensionDeclaration.swift
+//  SwiftTypealiasDeclaration.swift
 //  Conformant
 //
 //  Copyright © 2025 Prince Ugwuh. All rights reserved.
@@ -26,8 +26,12 @@
 
 import Foundation
 
-/// Represents a Swift extension declaration
-public class SwiftExtensionDeclaration: SwiftDeclaration {
+/// Represents a Swift typealias declaration.
+///
+/// A typealias is a dependency edge that used to be invisible: `typealias Handler =
+/// (Result<Data, NetworkError>) -> Void` ties the declaring layer to `NetworkError`
+/// just as firmly as a stored property would.
+public class SwiftTypealiasDeclaration: SwiftDeclaration {
     public let name: String
     public let modifiers: [SwiftModifier]
     public let annotations: [SwiftAnnotation]
@@ -35,10 +39,12 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
     public let filePath: String
     public let location: SourceLocation
     public let parentName: String?
-    public let properties: [SwiftPropertyDeclaration]
-    public let methods: [SwiftFunctionDeclaration]
-    public let subscripts: [SwiftSubscriptDeclaration]
-    public let protocols: [String]
+
+    /// The right-hand side of the alias, as written.
+    public let aliasedType: String
+
+    /// Names of the generic parameters, if the alias is generic (`typealias Pair<T>`).
+    public let genericParameters: [String]
 
     init(
         name: String,
@@ -47,10 +53,8 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
         dependencies: [SwiftDependency],
         filePath: String,
         location: SourceLocation,
-        properties: [SwiftPropertyDeclaration],
-        methods: [SwiftFunctionDeclaration],
-        protocols: [String],
-        subscripts: [SwiftSubscriptDeclaration] = [],
+        aliasedType: String,
+        genericParameters: [String] = [],
         parentName: String? = nil
     ) {
         self.name = name
@@ -59,14 +63,11 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
         self.dependencies = dependencies
         self.filePath = filePath
         self.location = location
-        self.properties = properties
-        self.methods = methods
-        self.protocols = protocols
-        self.subscripts = subscripts
+        self.aliasedType = aliasedType
+        self.genericParameters = genericParameters
         self.parentName = parentName
     }
 
-    public func implements(protocol protocolName: String) -> Bool {
-        protocols.contains(protocolName)
-    }
+    /// `true` when the alias takes generic parameters.
+    public var isGeneric: Bool { !genericParameters.isEmpty }
 }

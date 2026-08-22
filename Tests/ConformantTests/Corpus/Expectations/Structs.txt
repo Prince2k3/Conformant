@@ -56,7 +56,22 @@ fixture: Structs.swift
 ## protocols (0)
   <none>
 
+## actors (0)
+  <none>
+
 ## extensions (0)
+  <none>
+
+## typealiases (0)
+  <none>
+
+## macros (0)
+  <none>
+
+## operators (0)
+  <none>
+
+## precedence groups (0)
   <none>
 
 ## top-level functions (0)

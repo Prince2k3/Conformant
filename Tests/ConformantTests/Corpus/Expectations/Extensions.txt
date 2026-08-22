@@ -21,6 +21,9 @@ fixture: Extensions.swift
 ## protocols (0)
   <none>
 
+## actors (0)
+  <none>
+
 ## extensions (3)
 - String @3:1
     protocols: [Identifiable]
@@ -66,6 +69,18 @@ fixture: Extensions.swift
           dependencies: [Bool/typeUsage@12:17]
     methods:
       <none>
+
+## typealiases (0)
+  <none>
+
+## macros (0)
+  <none>
+
+## operators (0)
+  <none>
+
+## precedence groups (0)
+  <none>
 
 ## top-level functions (0)
   <none>

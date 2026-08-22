@@ -33,6 +33,7 @@ public class SwiftPropertyDeclaration: SwiftDeclaration {
     public let dependencies: [SwiftDependency]
     public let filePath: String
     public let location: SourceLocation
+    public let parentName: String?
     public let type: String
     public let isComputed: Bool
     public let initialValue: String?
@@ -46,7 +47,8 @@ public class SwiftPropertyDeclaration: SwiftDeclaration {
         location: SourceLocation,
         type: String,
         isComputed: Bool,
-        initialValue: String?
+        initialValue: String?,
+        parentName: String? = nil
     ) {
         self.name = name
         self.modifiers = modifiers
@@ -57,5 +59,6 @@ public class SwiftPropertyDeclaration: SwiftDeclaration {
         self.type = type
         self.isComputed = isComputed
         self.initialValue = initialValue
+        self.parentName = parentName
     }
 }

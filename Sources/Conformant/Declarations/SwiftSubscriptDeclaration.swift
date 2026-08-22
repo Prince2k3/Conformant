@@ -1,5 +1,5 @@
 //
-//  SwiftExtensionDeclaration.swift
+//  SwiftSubscriptDeclaration.swift
 //  Conformant
 //
 //  Copyright © 2025 Prince Ugwuh. All rights reserved.
@@ -26,8 +26,11 @@
 
 import Foundation
 
-/// Represents a Swift extension declaration
-public class SwiftExtensionDeclaration: SwiftDeclaration {
+/// Represents a Swift subscript declaration.
+///
+/// Subscripts have no identifier of their own, so they are named `subscript`. Use
+/// ``parameters`` and ``returnType`` to tell overloads apart.
+public class SwiftSubscriptDeclaration: SwiftDeclaration {
     public let name: String
     public let modifiers: [SwiftModifier]
     public let annotations: [SwiftAnnotation]
@@ -35,22 +38,24 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
     public let filePath: String
     public let location: SourceLocation
     public let parentName: String?
-    public let properties: [SwiftPropertyDeclaration]
-    public let methods: [SwiftFunctionDeclaration]
-    public let subscripts: [SwiftSubscriptDeclaration]
-    public let protocols: [String]
+    public let parameters: [SwiftParameterDeclaration]
+    public let returnType: String
+
+    /// Accessor keywords written in the subscript's body, e.g. `["get", "set"]`.
+    /// Empty for a protocol requirement written without a body, or for a
+    /// getter-only shorthand (`subscript(i: Int) -> T { expression }`).
+    public let accessors: [String]
 
     init(
-        name: String,
+        name: String = "subscript",
         modifiers: [SwiftModifier],
         annotations: [SwiftAnnotation],
         dependencies: [SwiftDependency],
         filePath: String,
         location: SourceLocation,
-        properties: [SwiftPropertyDeclaration],
-        methods: [SwiftFunctionDeclaration],
-        protocols: [String],
-        subscripts: [SwiftSubscriptDeclaration] = [],
+        parameters: [SwiftParameterDeclaration],
+        returnType: String,
+        accessors: [String] = [],
         parentName: String? = nil
     ) {
         self.name = name
@@ -59,14 +64,12 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
         self.dependencies = dependencies
         self.filePath = filePath
         self.location = location
-        self.properties = properties
-        self.methods = methods
-        self.protocols = protocols
-        self.subscripts = subscripts
+        self.parameters = parameters
+        self.returnType = returnType
+        self.accessors = accessors
         self.parentName = parentName
     }
 
-    public func implements(protocol protocolName: String) -> Bool {
-        protocols.contains(protocolName)
-    }
+    /// `true` when the subscript declares a setter.
+    public var isSettable: Bool { accessors.contains("set") }
 }

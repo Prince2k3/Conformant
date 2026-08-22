@@ -60,9 +60,9 @@ public class SwiftSyntaxParser {
         // it were complete, and the declarations it lost would look like clean code.
         collectSyntaxDiagnostics(in: sourceFile, converter: converter, path: canonicalPath, into: sink)
 
-        let visitor = SwiftSyntaxVisitor(filePath: canonicalPath, converter: converter, diagnostics: sink)
-        visitor.walk(sourceFile)
-        return visitor.makeSwiftFile()
+        let collector = DeclarationCollector(filePath: canonicalPath, converter: converter, diagnostics: sink)
+        collector.collect(from: sourceFile)
+        return collector.makeSwiftFile()
     }
 
     private func collectSyntaxDiagnostics(

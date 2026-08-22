@@ -21,7 +21,27 @@ fixture: Functions.swift
 ## protocols (0)
   <none>
 
+## actors (0)
+  <none>
+
 ## extensions (0)
+  <none>
+
+## typealiases (0)
+  <none>
+
+## macros (0)
+  <none>
+
+## operators (1)
+- |> @15:1
+    fixity: infix
+    precedenceGroup: AdditionPrecedence
+    modifiers: [infix]
+    annotations: []
+    dependencies: []
+
+## precedence groups (0)
   <none>
 
 ## top-level functions (4)

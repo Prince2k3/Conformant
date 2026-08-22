@@ -153,23 +153,65 @@ public struct Conformant {
         return files().flatMap { $0.enums }
     }
 
-//    declaration → import-declaration
-//    declaration → constant-declaration // missing
-//    declaration → variable-declaration
-//    declaration → typealias-declaration // missing
-//    declaration → function-declaration
-//    declaration → enum-declaration
-//    declaration → struct-declaration
-//    declaration → class-declaration
-//    declaration → actor-declaration // missing
-//    declaration → protocol-declaration
-//    declaration → initializer-declaration // missing
-//    declaration → deinitializer-declaration // missing
-//    declaration → extension-declaration
-//    declaration → subscript-declaration // missing
-//    declaration → macro-declaration // missing
-//    declaration → operator-declaration // missing
-//    declaration → precedence-group-declaration // missing
+    public func actors() -> [SwiftActorDeclaration] {
+        return files().flatMap { $0.actors }
+    }
+
+    public func typealiases() -> [SwiftTypealiasDeclaration] {
+        return files().flatMap { $0.typealiases }
+    }
+
+    public func macros() -> [SwiftMacroDeclaration] {
+        return files().flatMap { $0.macros }
+    }
+
+    public func operators() -> [SwiftOperatorDeclaration] {
+        return files().flatMap { $0.operators }
+    }
+
+    public func precedenceGroups() -> [SwiftPrecedenceGroupDeclaration] {
+        return files().flatMap { $0.precedenceGroups }
+    }
+
+    /// Every initializer, method, and computed/stored property declared inside a type.
+    ///
+    /// Members are reached through their owning declaration; this is the flat view.
+    public func subscripts() -> [SwiftSubscriptDeclaration] {
+        var subscripts: [SwiftSubscriptDeclaration] = []
+        subscripts.append(contentsOf: classes().flatMap { $0.subscripts })
+        subscripts.append(contentsOf: structs().flatMap { $0.subscripts })
+        subscripts.append(contentsOf: enums().flatMap { $0.subscripts })
+        subscripts.append(contentsOf: actors().flatMap { $0.subscripts })
+        subscripts.append(contentsOf: extensions().flatMap { $0.subscripts })
+        subscripts.append(contentsOf: protocols().flatMap { $0.subscriptRequirements })
+        return subscripts
+    }
+
+    public func deinitializers() -> [SwiftDeinitializerDeclaration] {
+        var deinitializers: [SwiftDeinitializerDeclaration] = []
+        deinitializers.append(contentsOf: classes().flatMap { $0.deinitializers })
+        deinitializers.append(contentsOf: actors().flatMap { $0.deinitializers })
+        return deinitializers
+    }
+
+    public func associatedTypes() -> [SwiftAssociatedTypeDeclaration] {
+        return protocols().flatMap { $0.associatedTypes }
+    }
+
+    /// Types declared inside another type, named as they are written from the outside
+    /// (`Outer.Inner`).
+    public func nestedTypes() -> [AnySwiftDeclaration] {
+        return types().filter { $0.isNested }
+    }
+
+    /// Types declared at file scope.
+    public func topLevelTypes() -> [AnySwiftDeclaration] {
+        return types().filter { !$0.isNested }
+    }
+
+// Every declaration form in the Swift grammar is extracted. Constants (`let`) are
+// reported as properties, and initializers as methods named `init`, because that is how
+// they are written and how rules reason about them.
 
     public func declarations() -> [AnySwiftDeclaration] {
         var declarations: [AnySwiftDeclaration] = []
@@ -181,15 +223,25 @@ public struct Conformant {
         declarations.append(contentsOf: functions().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: properties().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: enums().map(AnySwiftDeclaration.init))
+        declarations.append(contentsOf: actors().map(AnySwiftDeclaration.init))
+        declarations.append(contentsOf: typealiases().map(AnySwiftDeclaration.init))
+        declarations.append(contentsOf: macros().map(AnySwiftDeclaration.init))
+        declarations.append(contentsOf: operators().map(AnySwiftDeclaration.init))
+        declarations.append(contentsOf: precedenceGroups().map(AnySwiftDeclaration.init))
+        declarations.append(contentsOf: subscripts().map(AnySwiftDeclaration.init))
+        declarations.append(contentsOf: deinitializers().map(AnySwiftDeclaration.init))
+        declarations.append(contentsOf: associatedTypes().map(AnySwiftDeclaration.init))
         return declarations
     }
 
+    /// Nominal types: classes, structs, enums, protocols, and actors.
     public func types() -> [AnySwiftDeclaration] {
         var declarations: [AnySwiftDeclaration] = []
         declarations.append(contentsOf: classes().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: structs().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: enums().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: protocols().map(AnySwiftDeclaration.init))
+        declarations.append(contentsOf: actors().map(AnySwiftDeclaration.init))
         return declarations
     }
 
@@ -199,6 +251,14 @@ public struct Conformant {
         declarations.append(contentsOf: structs().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: enums().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: protocols().map(AnySwiftDeclaration.init))
+        declarations.append(contentsOf: actors().map(AnySwiftDeclaration.init))
+        declarations.append(contentsOf: extensions().map(AnySwiftDeclaration.init))
+        return declarations
+    }
+
+    public func actorsAndExtensions() -> [AnySwiftDeclaration] {
+        var declarations: [AnySwiftDeclaration] = []
+        declarations.append(contentsOf: actors().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: extensions().map(AnySwiftDeclaration.init))
         return declarations
     }

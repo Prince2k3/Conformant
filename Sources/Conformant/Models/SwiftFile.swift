@@ -36,6 +36,11 @@ public struct SwiftFile {
     public let functions: [SwiftFunctionDeclaration]
     public let properties: [SwiftPropertyDeclaration]
     public let enums: [SwiftEnumDeclaration]
+    public let actors: [SwiftActorDeclaration]
+    public let typealiases: [SwiftTypealiasDeclaration]
+    public let macros: [SwiftMacroDeclaration]
+    public let operators: [SwiftOperatorDeclaration]
+    public let precedenceGroups: [SwiftPrecedenceGroupDeclaration]
 
     /// Problems found while reading this file: syntax errors reported by the parser, and
     /// constructs the extractor could not fully represent. Empty for a clean file.
@@ -47,6 +52,40 @@ public struct SwiftFile {
         diagnostics.contains { $0.severity == .error }
     }
 
+    init(
+        path: String,
+        imports: [SwiftImportDeclaration],
+        classes: [SwiftClassDeclaration],
+        structs: [SwiftStructDeclaration],
+        actors: [SwiftActorDeclaration],
+        protocols: [SwiftProtocolDeclaration],
+        extensions: [SwiftExtensionDeclaration],
+        functions: [SwiftFunctionDeclaration],
+        properties: [SwiftPropertyDeclaration],
+        enums: [SwiftEnumDeclaration],
+        typealiases: [SwiftTypealiasDeclaration],
+        macros: [SwiftMacroDeclaration],
+        operators: [SwiftOperatorDeclaration],
+        precedenceGroups: [SwiftPrecedenceGroupDeclaration],
+        diagnostics: [ParseDiagnostic]
+    ) {
+        self.path = path
+        self.imports = imports
+        self.classes = classes
+        self.structs = structs
+        self.protocols = protocols
+        self.extensions = extensions
+        self.functions = functions
+        self.properties = properties
+        self.enums = enums
+        self.actors = actors
+        self.typealiases = typealiases
+        self.macros = macros
+        self.operators = operators
+        self.precedenceGroups = precedenceGroups
+        self.diagnostics = diagnostics
+    }
+
     var internalDependencies: [SwiftDependency] {
         var deps: [SwiftDependency] = []
         deps.append(contentsOf: classes.flatMap { $0.dependencies })
@@ -56,6 +95,9 @@ public struct SwiftFile {
         deps.append(contentsOf: functions.flatMap { $0.dependencies })
         deps.append(contentsOf: properties.flatMap { $0.dependencies })
         deps.append(contentsOf: enums.flatMap { $0.dependencies })
+        deps.append(contentsOf: actors.flatMap { $0.dependencies })
+        deps.append(contentsOf: typealiases.flatMap { $0.dependencies })
+        deps.append(contentsOf: macros.flatMap { $0.dependencies })
         return deps
     }
 

@@ -1,5 +1,5 @@
 //
-//  SwiftExtensionDeclaration.swift
+//  SwiftMacroDeclaration.swift
 //  Conformant
 //
 //  Copyright © 2025 Prince Ugwuh. All rights reserved.
@@ -26,8 +26,8 @@
 
 import Foundation
 
-/// Represents a Swift extension declaration
-public class SwiftExtensionDeclaration: SwiftDeclaration {
+/// Represents a Swift `macro` declaration.
+public class SwiftMacroDeclaration: SwiftDeclaration {
     public let name: String
     public let modifiers: [SwiftModifier]
     public let annotations: [SwiftAnnotation]
@@ -35,10 +35,12 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
     public let filePath: String
     public let location: SourceLocation
     public let parentName: String?
-    public let properties: [SwiftPropertyDeclaration]
-    public let methods: [SwiftFunctionDeclaration]
-    public let subscripts: [SwiftSubscriptDeclaration]
-    public let protocols: [String]
+    public let parameters: [SwiftParameterDeclaration]
+    public let returnType: String?
+
+    /// The right-hand side of the macro, as written — for example
+    /// `#externalMacro(module: "MyMacros", type: "StringifyMacro")`.
+    public let definition: String?
 
     init(
         name: String,
@@ -47,10 +49,9 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
         dependencies: [SwiftDependency],
         filePath: String,
         location: SourceLocation,
-        properties: [SwiftPropertyDeclaration],
-        methods: [SwiftFunctionDeclaration],
-        protocols: [String],
-        subscripts: [SwiftSubscriptDeclaration] = [],
+        parameters: [SwiftParameterDeclaration],
+        returnType: String?,
+        definition: String?,
         parentName: String? = nil
     ) {
         self.name = name
@@ -59,14 +60,9 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
         self.dependencies = dependencies
         self.filePath = filePath
         self.location = location
-        self.properties = properties
-        self.methods = methods
-        self.protocols = protocols
-        self.subscripts = subscripts
+        self.parameters = parameters
+        self.returnType = returnType
+        self.definition = definition
         self.parentName = parentName
-    }
-
-    public func implements(protocol protocolName: String) -> Bool {
-        protocols.contains(protocolName)
     }
 }

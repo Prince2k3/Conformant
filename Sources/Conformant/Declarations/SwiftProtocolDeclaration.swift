@@ -23,6 +23,7 @@
 //  SOFTWARE.
 //
 
+
 import Foundation
 
 /// Represents a Swift protocol declaration
@@ -33,9 +34,12 @@ public class SwiftProtocolDeclaration: SwiftDeclaration {
     public let dependencies: [SwiftDependency]
     public let filePath: String
     public let location: SourceLocation
+    public let parentName: String?
     public let inheritedProtocols: [String]
     public let propertyRequirements: [SwiftPropertyDeclaration]
     public let methodRequirements: [SwiftFunctionDeclaration]
+    public let subscriptRequirements: [SwiftSubscriptDeclaration]
+    public let associatedTypes: [SwiftAssociatedTypeDeclaration]
 
     init(
         name: String,
@@ -46,7 +50,10 @@ public class SwiftProtocolDeclaration: SwiftDeclaration {
         location: SourceLocation,
         inheritedProtocols: [String],
         propertyRequirements: [SwiftPropertyDeclaration],
-        methodRequirements: [SwiftFunctionDeclaration]
+        methodRequirements: [SwiftFunctionDeclaration],
+        subscriptRequirements: [SwiftSubscriptDeclaration] = [],
+        associatedTypes: [SwiftAssociatedTypeDeclaration] = [],
+        parentName: String? = nil
     ) {
         self.name = name
         self.modifiers = modifiers
@@ -57,9 +64,16 @@ public class SwiftProtocolDeclaration: SwiftDeclaration {
         self.inheritedProtocols = inheritedProtocols
         self.propertyRequirements = propertyRequirements
         self.methodRequirements = methodRequirements
+        self.subscriptRequirements = subscriptRequirements
+        self.associatedTypes = associatedTypes
+        self.parentName = parentName
     }
 
     public func inherits(from protocolName: String) -> Bool {
         return inheritedProtocols.contains(protocolName)
+    }
+
+    public func hasAssociatedType(named name: String) -> Bool {
+        return associatedTypes.contains { $0.name == name }
     }
 }

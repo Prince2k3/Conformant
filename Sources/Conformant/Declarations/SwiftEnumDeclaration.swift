@@ -23,6 +23,7 @@
 //  SOFTWARE.
 //
 
+
 import Foundation
 
 /// Represents a Swift enum declaration
@@ -33,9 +34,11 @@ public class SwiftEnumDeclaration: SwiftDeclaration {
     public let dependencies: [SwiftDependency]
     public let filePath: String
     public let location: SourceLocation
+    public let parentName: String?
     public let cases: [EnumCase]
     public let properties: [SwiftPropertyDeclaration]
     public let methods: [SwiftFunctionDeclaration]
+    public let subscripts: [SwiftSubscriptDeclaration]
     public let rawType: String?
     public let protocols: [String]
 
@@ -56,7 +59,9 @@ public class SwiftEnumDeclaration: SwiftDeclaration {
         properties: [SwiftPropertyDeclaration],
         methods: [SwiftFunctionDeclaration],
         rawType: String?,
-        protocols: [String]
+        protocols: [String],
+        subscripts: [SwiftSubscriptDeclaration] = [],
+        parentName: String? = nil
     ) {
         self.name = name
         self.modifiers = modifiers
@@ -69,6 +74,8 @@ public class SwiftEnumDeclaration: SwiftDeclaration {
         self.methods = methods
         self.rawType = rawType
         self.protocols = protocols
+        self.subscripts = subscripts
+        self.parentName = parentName
     }
 
     public func implements(protocol protocolName: String) -> Bool {

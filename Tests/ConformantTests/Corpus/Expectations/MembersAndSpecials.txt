@@ -14,13 +14,19 @@ fixture: MembersAndSpecials.swift
       <none>
     methods:
       <none>
+    deinitializers:
+      - deinit @12:5
+          hasBody: true
+          modifiers: []
+          annotations: []
+          dependencies: []
 
 ## structs (1)
 - Container @1:1
     protocols: []
     modifiers: []
     annotations: []
-    dependencies: [Bool/typeUsage@6:53, Container/typeUsage@6:26, Container/typeUsage@6:42, RawInput/typeUsage@8:21]
+    dependencies: [Bool/typeUsage@6:53, Container/typeUsage@6:26, Container/typeUsage@6:42, Element/typeUsage@2:27, Int/typeUsage@2:22, RawInput/typeUsage@8:21]
     properties:
       <none>
     methods:
@@ -40,6 +46,14 @@ fixture: MembersAndSpecials.swift
           modifiers: []
           annotations: []
           dependencies: [RawInput/typeUsage@8:21]
+    subscripts:
+      - subscript @2:5
+          parameters: [index: Int]
+          returns: Element
+          accessors: [get]
+          modifiers: []
+          annotations: []
+          dependencies: [Element/typeUsage@2:27, Int/typeUsage@2:22]
 
 ## enums (0)
   <none>
@@ -47,7 +61,33 @@ fixture: MembersAndSpecials.swift
 ## protocols (0)
   <none>
 
+## actors (0)
+  <none>
+
 ## extensions (0)
+  <none>
+
+## typealiases (2)
+- Handler @17:1
+    aliases: (Result<Data, NetworkError>) -> Void
+    genericParameters: []
+    modifiers: []
+    annotations: []
+    dependencies: [Data/typeUsage@17:21, NetworkError/typeUsage@17:21, Result/typeUsage@17:21, Void/typeUsage@17:21]
+- Pair @18:1
+    aliases: (T, T)
+    genericParameters: [T]
+    modifiers: []
+    annotations: []
+    dependencies: []
+
+## macros (0)
+  <none>
+
+## operators (0)
+  <none>
+
+## precedence groups (0)
   <none>
 
 ## top-level functions (0)

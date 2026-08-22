@@ -23,6 +23,7 @@
 //  SOFTWARE.
 //
 
+
 import Foundation
 
 /// Represents a Swift struct declaration
@@ -33,9 +34,11 @@ public class SwiftStructDeclaration: SwiftDeclaration {
     public let dependencies: [SwiftDependency]
     public let filePath: String
     public let location: SourceLocation
+    public let parentName: String?
     public let protocols: [String]
     public let properties: [SwiftPropertyDeclaration]
     public let methods: [SwiftFunctionDeclaration]
+    public let subscripts: [SwiftSubscriptDeclaration]
 
     init(
         name: String,
@@ -46,7 +49,9 @@ public class SwiftStructDeclaration: SwiftDeclaration {
         location: SourceLocation,
         protocols: [String],
         properties: [SwiftPropertyDeclaration],
-        methods: [SwiftFunctionDeclaration]
+        methods: [SwiftFunctionDeclaration],
+        subscripts: [SwiftSubscriptDeclaration] = [],
+        parentName: String? = nil
     ) {
         self.name = name
         self.modifiers = modifiers
@@ -57,6 +62,8 @@ public class SwiftStructDeclaration: SwiftDeclaration {
         self.protocols = protocols
         self.properties = properties
         self.methods = methods
+        self.subscripts = subscripts
+        self.parentName = parentName
     }
 
     public func hasProperty(named name: String) -> Bool {

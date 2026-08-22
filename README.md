@@ -4,7 +4,7 @@ Conformant is a tool that leverages Swift’s [swift-syntax](https://github.com/
 
 ## Features
 
-- **Code Structure Analysis**: Inspect Swift code elements (classes, structs, protocols, enums, etc.) and verify their properties.
+- **Complete Declaration Coverage**: Every form in the Swift grammar is extracted — classes, structs, enums, protocols, actors, extensions, typealiases, functions, properties, initializers, deinitializers, subscripts, associated types, macros, operators, and precedence groups. Nested types are collected in their own right, under a qualified name (`Outer.Inner`).
 - **Architectural Rules**: Define and enforce architectural boundaries between different layers of your application.
 - **Import Analysis**: Track and verify import dependencies between modules.
 - **Dependency Tracking**: Analyze type dependencies across your entire codebase.
@@ -367,6 +367,28 @@ The Filtering API provides a collection of extension methods on Swift collection
 | `inFilePath(containing:)` | In file with path containing substring |
 | `inPackage(_:)` | In specific package |
 
+### Nesting Filters
+
+| Method | Description |
+|--------|-------------|
+| `withParent(_:)` | Declared directly inside the named type |
+| `withAncestor(_:)` | Declared inside the named type at any depth |
+| `nested()` | Declared inside another type |
+| `topLevel()` | Declared at file scope |
+
+A nested type is named as it is written from the outside, so `Inner` inside `Outer` is
+`Outer.Inner`. Its `simpleName` is `Inner` and its `parentName` is `Outer`. Its
+dependencies belong to it, not to `Outer` — a rule such as "`Outer` must not depend on
+`UserRepository`" means what it says.
+
+```swift
+// Nested types are visible alongside top-level ones
+scope.structs()                      // ["Outer", "Outer.Inner"]
+scope.nestedTypes()                  // ["Outer.Inner"]
+scope.topLevelTypes()                // ["Outer"]
+scope.structs().withParent("Outer")  // ["Outer.Inner"]
+```
+
 ### Dependency Filters
 
 | Method | Description |
@@ -388,6 +410,30 @@ let classesWithInit = scope.classes().havingMethod(named: "init")
 
 // Get non-final classes
 let subclassableClasses = scope.classes().subclassable()
+```
+
+#### Actors
+
+```swift
+// Get actors that conform to a protocol
+let auditable = scope.actors().implementing(protocol: "Auditable")
+
+// Get @globalActor and distributed actor declarations
+let globalActors = scope.actors().globalActors()
+let workers = scope.actors().distributed()
+```
+
+#### Typealiases and Subscripts
+
+```swift
+// Get typealiases whose aliased type mentions a given type
+let handlers = scope.typealiases().aliasing("Response")
+
+// Get generic typealiases
+let generic = scope.typealiases().generic()
+
+// Get every settable subscript in the scope
+let settable = scope.subscripts().settable()
 ```
 
 #### Structs

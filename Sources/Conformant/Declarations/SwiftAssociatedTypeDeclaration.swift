@@ -1,5 +1,5 @@
 //
-//  SwiftExtensionDeclaration.swift
+//  SwiftAssociatedTypeDeclaration.swift
 //  Conformant
 //
 //  Copyright © 2025 Prince Ugwuh. All rights reserved.
@@ -26,8 +26,8 @@
 
 import Foundation
 
-/// Represents a Swift extension declaration
-public class SwiftExtensionDeclaration: SwiftDeclaration {
+/// Represents an `associatedtype` requirement inside a protocol.
+public class SwiftAssociatedTypeDeclaration: SwiftDeclaration {
     public let name: String
     public let modifiers: [SwiftModifier]
     public let annotations: [SwiftAnnotation]
@@ -35,10 +35,12 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
     public let filePath: String
     public let location: SourceLocation
     public let parentName: String?
-    public let properties: [SwiftPropertyDeclaration]
-    public let methods: [SwiftFunctionDeclaration]
-    public let subscripts: [SwiftSubscriptDeclaration]
-    public let protocols: [String]
+
+    /// Types the associated type is constrained to conform to or inherit from.
+    public let inheritedTypes: [String]
+
+    /// The default written with `= SomeType`, if any.
+    public let defaultType: String?
 
     init(
         name: String,
@@ -47,10 +49,8 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
         dependencies: [SwiftDependency],
         filePath: String,
         location: SourceLocation,
-        properties: [SwiftPropertyDeclaration],
-        methods: [SwiftFunctionDeclaration],
-        protocols: [String],
-        subscripts: [SwiftSubscriptDeclaration] = [],
+        inheritedTypes: [String],
+        defaultType: String?,
         parentName: String? = nil
     ) {
         self.name = name
@@ -59,14 +59,8 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
         self.dependencies = dependencies
         self.filePath = filePath
         self.location = location
-        self.properties = properties
-        self.methods = methods
-        self.protocols = protocols
-        self.subscripts = subscripts
+        self.inheritedTypes = inheritedTypes
+        self.defaultType = defaultType
         self.parentName = parentName
-    }
-
-    public func implements(protocol protocolName: String) -> Bool {
-        protocols.contains(protocolName)
     }
 }

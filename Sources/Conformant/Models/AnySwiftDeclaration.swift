@@ -56,6 +56,10 @@ public struct AnySwiftDeclaration: SwiftDeclaration {
         _declaration.location
     }
 
+    public var parentName: String? {
+        _declaration.parentName
+    }
+
     public func hasAnnotation(named name: String) -> Bool {
         _declaration.hasAnnotation(named: name)
     }

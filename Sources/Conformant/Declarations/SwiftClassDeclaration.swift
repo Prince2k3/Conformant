@@ -23,6 +23,7 @@
 //  SOFTWARE.
 //
 
+
 import Foundation
 
 /// Represents a Swift class declaration
@@ -33,10 +34,13 @@ public class SwiftClassDeclaration: SwiftDeclaration {
     public let dependencies: [SwiftDependency]
     public let filePath: String
     public let location: SourceLocation
+    public let parentName: String?
     public let superClass: String?
     public let protocols: [String]
     public let properties: [SwiftPropertyDeclaration]
     public let methods: [SwiftFunctionDeclaration]
+    public let subscripts: [SwiftSubscriptDeclaration]
+    public let deinitializers: [SwiftDeinitializerDeclaration]
 
     init(
         name: String,
@@ -48,7 +52,10 @@ public class SwiftClassDeclaration: SwiftDeclaration {
         superClass: String?,
         protocols: [String],
         properties: [SwiftPropertyDeclaration],
-        methods: [SwiftFunctionDeclaration]
+        methods: [SwiftFunctionDeclaration],
+        subscripts: [SwiftSubscriptDeclaration] = [],
+        deinitializers: [SwiftDeinitializerDeclaration] = [],
+        parentName: String? = nil
     ) {
         self.name = name
         self.modifiers = modifiers
@@ -60,6 +67,9 @@ public class SwiftClassDeclaration: SwiftDeclaration {
         self.protocols = protocols
         self.properties = properties
         self.methods = methods
+        self.subscripts = subscripts
+        self.deinitializers = deinitializers
+        self.parentName = parentName
     }
 
     public func hasProperty(named name: String) -> Bool {

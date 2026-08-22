@@ -1,5 +1,5 @@
 //
-//  SwiftExtensionDeclaration.swift
+//  SwiftActorDeclaration.swift
 //  Conformant
 //
 //  Copyright © 2025 Prince Ugwuh. All rights reserved.
@@ -26,8 +26,11 @@
 
 import Foundation
 
-/// Represents a Swift extension declaration
-public class SwiftExtensionDeclaration: SwiftDeclaration {
+/// Represents a Swift actor declaration.
+///
+/// Actors are reference types like classes but cannot inherit from another actor, so
+/// there is no superclass — every inherited type in the clause is a conformance.
+public class SwiftActorDeclaration: SwiftDeclaration {
     public let name: String
     public let modifiers: [SwiftModifier]
     public let annotations: [SwiftAnnotation]
@@ -35,10 +38,11 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
     public let filePath: String
     public let location: SourceLocation
     public let parentName: String?
+    public let protocols: [String]
     public let properties: [SwiftPropertyDeclaration]
     public let methods: [SwiftFunctionDeclaration]
     public let subscripts: [SwiftSubscriptDeclaration]
-    public let protocols: [String]
+    public let deinitializers: [SwiftDeinitializerDeclaration]
 
     init(
         name: String,
@@ -47,10 +51,11 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
         dependencies: [SwiftDependency],
         filePath: String,
         location: SourceLocation,
+        protocols: [String],
         properties: [SwiftPropertyDeclaration],
         methods: [SwiftFunctionDeclaration],
-        protocols: [String],
         subscripts: [SwiftSubscriptDeclaration] = [],
+        deinitializers: [SwiftDeinitializerDeclaration] = [],
         parentName: String? = nil
     ) {
         self.name = name
@@ -59,11 +64,30 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
         self.dependencies = dependencies
         self.filePath = filePath
         self.location = location
+        self.protocols = protocols
         self.properties = properties
         self.methods = methods
-        self.protocols = protocols
         self.subscripts = subscripts
+        self.deinitializers = deinitializers
         self.parentName = parentName
+    }
+
+    /// `true` when the actor is annotated `@globalActor`.
+    public var isGlobalActor: Bool {
+        hasAnnotation(named: "globalActor")
+    }
+
+    /// `true` when the actor is declared `distributed actor`.
+    public var isDistributed: Bool {
+        hasModifier(.distributed)
+    }
+
+    public func hasProperty(named name: String) -> Bool {
+        properties.contains { $0.name == name }
+    }
+
+    public func hasMethod(named name: String) -> Bool {
+        methods.contains { $0.name == name }
     }
 
     public func implements(protocol protocolName: String) -> Bool {

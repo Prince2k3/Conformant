@@ -52,7 +52,7 @@ fixture: Properties.swift
       - expensive: ExpensiveResource @12:14
           computed: false
           initialValue: ExpensiveResource()
-          modifiers: []
+          modifiers: [lazy]
           annotations: []
           dependencies: [ExpensiveResource/typeUsage@12:25]
       - delegate: SomeDelegate? @13:14
@@ -64,7 +64,7 @@ fixture: Properties.swift
       - owner: Owner @14:17
           computed: false
           initialValue: <none>
-          modifiers: []
+          modifiers: [unowned]
           annotations: []
           dependencies: [Owner/typeUsage@14:24]
       - computed: Int @16:9
@@ -88,7 +88,22 @@ fixture: Properties.swift
 ## protocols (0)
   <none>
 
+## actors (0)
+  <none>
+
 ## extensions (0)
+  <none>
+
+## typealiases (0)
+  <none>
+
+## macros (0)
+  <none>
+
+## operators (0)
+  <none>
+
+## precedence groups (0)
   <none>
 
 ## top-level functions (0)

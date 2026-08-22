@@ -164,6 +164,31 @@ extension Collection where Element: SwiftDeclaration {
         return self.filter { $0.resideInPackage(packagePattern) }
     }
 
+    // MARK: - Nesting Filtering
+
+    /// Filter declarations nested directly inside the named type.
+    ///
+    /// The parent is matched by its qualified name, so `withParent("Outer.Inner")`
+    /// selects the members of `Inner` and not those of `Outer`.
+    public func withParent(_ parentName: String) -> [Element] {
+        return self.filter { $0.parentName == parentName }
+    }
+
+    /// Filter declarations nested inside the named type at any depth.
+    public func withAncestor(_ ancestorName: String) -> [Element] {
+        return self.filter { $0.name.hasPrefix(ancestorName + ".") }
+    }
+
+    /// Filter declarations that are nested inside another type.
+    public func nested() -> [Element] {
+        return self.filter { $0.isNested }
+    }
+
+    /// Filter declarations that are declared at file scope.
+    public func topLevel() -> [Element] {
+        return self.filter { !$0.isNested }
+    }
+
     // MARK: - Dependency Filtering
 
     /// Filter declarations that are import types
@@ -290,6 +315,77 @@ extension Collection where Element == SwiftStructDeclaration {
     /// Filter structs that have a specific property
     public func havingProperty(named propertyName: String) -> [Element] {
         return self.filter { $0.hasProperty(named: propertyName) }
+    }
+}
+
+// MARK: - Actor-Specific Filtering
+
+extension Collection where Element == SwiftActorDeclaration {
+    /// Filter actors that conform to a specific protocol
+    public func implementing(protocol protocolName: String) -> [Element] {
+        return self.filter { $0.implements(protocol: protocolName) }
+    }
+
+    /// Filter actors that conform to any of the specified protocols
+    public func implementingAny(protocols protocolNames: String...) -> [Element] {
+        return self.filter { actorDecl in
+            protocolNames.contains { actorDecl.implements(protocol: $0) }
+        }
+    }
+
+    /// Filter actors that conform to all of the specified protocols
+    public func implementingAll(protocols protocolNames: String...) -> [Element] {
+        return self.filter { actorDecl in
+            protocolNames.allSatisfy { actorDecl.implements(protocol: $0) }
+        }
+    }
+
+    /// Filter actors that have a specific method
+    public func havingMethod(named methodName: String) -> [Element] {
+        return self.filter { $0.hasMethod(named: methodName) }
+    }
+
+    /// Filter actors that have a specific property
+    public func havingProperty(named propertyName: String) -> [Element] {
+        return self.filter { $0.hasProperty(named: propertyName) }
+    }
+
+    /// Filter actors declared with `@globalActor`
+    public func globalActors() -> [Element] {
+        return self.filter { $0.isGlobalActor }
+    }
+
+    /// Filter `distributed actor` declarations
+    public func distributed() -> [Element] {
+        return self.filter { $0.isDistributed }
+    }
+}
+
+// MARK: - Typealias-Specific Filtering
+
+extension Collection where Element == SwiftTypealiasDeclaration {
+    /// Filter typealiases whose aliased type contains the given string
+    public func aliasing(_ typeName: String) -> [Element] {
+        return self.filter { $0.aliasedType.contains(typeName) }
+    }
+
+    /// Filter typealiases that declare generic parameters
+    public func generic() -> [Element] {
+        return self.filter { $0.isGeneric }
+    }
+}
+
+// MARK: - Subscript-Specific Filtering
+
+extension Collection where Element == SwiftSubscriptDeclaration {
+    /// Filter subscripts that declare a setter
+    public func settable() -> [Element] {
+        return self.filter { $0.isSettable }
+    }
+
+    /// Filter subscripts by their return type
+    public func returning(_ typeName: String) -> [Element] {
+        return self.filter { $0.returnType == typeName }
     }
 }
 

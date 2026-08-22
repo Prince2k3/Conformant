@@ -1,5 +1,5 @@
 //
-//  SwiftExtensionDeclaration.swift
+//  SwiftPrecedenceGroupDeclaration.swift
 //  Conformant
 //
 //  Copyright © 2025 Prince Ugwuh. All rights reserved.
@@ -26,19 +26,23 @@
 
 import Foundation
 
-/// Represents a Swift extension declaration
-public class SwiftExtensionDeclaration: SwiftDeclaration {
+/// Represents a `precedencegroup` declaration.
+public class SwiftPrecedenceGroupDeclaration: SwiftDeclaration {
     public let name: String
     public let modifiers: [SwiftModifier]
     public let annotations: [SwiftAnnotation]
     public let dependencies: [SwiftDependency]
     public let filePath: String
     public let location: SourceLocation
-    public let parentName: String?
-    public let properties: [SwiftPropertyDeclaration]
-    public let methods: [SwiftFunctionDeclaration]
-    public let subscripts: [SwiftSubscriptDeclaration]
-    public let protocols: [String]
+
+    /// `left`, `right`, or `none` — `nil` when the group does not state one.
+    public let associativity: String?
+
+    /// `true` when the group declares `assignment: true`.
+    public let isAssignment: Bool
+
+    public let higherThan: [String]
+    public let lowerThan: [String]
 
     init(
         name: String,
@@ -47,11 +51,10 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
         dependencies: [SwiftDependency],
         filePath: String,
         location: SourceLocation,
-        properties: [SwiftPropertyDeclaration],
-        methods: [SwiftFunctionDeclaration],
-        protocols: [String],
-        subscripts: [SwiftSubscriptDeclaration] = [],
-        parentName: String? = nil
+        associativity: String?,
+        isAssignment: Bool,
+        higherThan: [String],
+        lowerThan: [String]
     ) {
         self.name = name
         self.modifiers = modifiers
@@ -59,14 +62,9 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
         self.dependencies = dependencies
         self.filePath = filePath
         self.location = location
-        self.properties = properties
-        self.methods = methods
-        self.protocols = protocols
-        self.subscripts = subscripts
-        self.parentName = parentName
-    }
-
-    public func implements(protocol protocolName: String) -> Bool {
-        protocols.contains(protocolName)
+        self.associativity = associativity
+        self.isAssignment = isAssignment
+        self.higherThan = higherThan
+        self.lowerThan = lowerThan
     }
 }

@@ -1,5 +1,5 @@
 //
-//  SwiftExtensionDeclaration.swift
+//  SwiftDeinitializerDeclaration.swift
 //  Conformant
 //
 //  Copyright © 2025 Prince Ugwuh. All rights reserved.
@@ -26,8 +26,11 @@
 
 import Foundation
 
-/// Represents a Swift extension declaration
-public class SwiftExtensionDeclaration: SwiftDeclaration {
+/// Represents a Swift `deinit` declaration.
+///
+/// Always named `deinit`. A deinitializer takes no parameters and returns nothing, so
+/// the only thing it carries beyond its location is its body.
+public class SwiftDeinitializerDeclaration: SwiftDeclaration {
     public let name: String
     public let modifiers: [SwiftModifier]
     public let annotations: [SwiftAnnotation]
@@ -35,22 +38,16 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
     public let filePath: String
     public let location: SourceLocation
     public let parentName: String?
-    public let properties: [SwiftPropertyDeclaration]
-    public let methods: [SwiftFunctionDeclaration]
-    public let subscripts: [SwiftSubscriptDeclaration]
-    public let protocols: [String]
+    public let body: String?
 
     init(
-        name: String,
+        name: String = "deinit",
         modifiers: [SwiftModifier],
         annotations: [SwiftAnnotation],
         dependencies: [SwiftDependency],
         filePath: String,
         location: SourceLocation,
-        properties: [SwiftPropertyDeclaration],
-        methods: [SwiftFunctionDeclaration],
-        protocols: [String],
-        subscripts: [SwiftSubscriptDeclaration] = [],
+        body: String?,
         parentName: String? = nil
     ) {
         self.name = name
@@ -59,14 +56,7 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
         self.dependencies = dependencies
         self.filePath = filePath
         self.location = location
-        self.properties = properties
-        self.methods = methods
-        self.protocols = protocols
-        self.subscripts = subscripts
+        self.body = body
         self.parentName = parentName
-    }
-
-    public func implements(protocol protocolName: String) -> Bool {
-        protocols.contains(protocolName)
     }
 }

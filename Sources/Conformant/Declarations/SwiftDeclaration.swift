@@ -23,16 +23,25 @@
 //  SOFTWARE.
 //
 
+
 import Foundation
 
 /// Base protocol for all Swift declarations
 public protocol SwiftDeclaration {
+    /// The declaration's name, qualified by its enclosing types when nested (`Outer.Inner`).
     var name: String { get }
     var modifiers: [SwiftModifier] { get }
     var annotations: [SwiftAnnotation] { get }
     var dependencies: [SwiftDependency] { get }
     var filePath: String { get }
     var location: SourceLocation { get }
+
+    /// The qualified name of the enclosing type, or `nil` for a top-level declaration.
+    ///
+    /// Nested declarations were invisible before they carried a parent: they either went
+    /// uncollected or their members were folded into the enclosing type. A rule can now
+    /// tell `Outer.Inner` from a top-level `Inner`.
+    var parentName: String? { get }
 
     func hasAnnotation(named: String) -> Bool
     func hasModifier(_ modifier: SwiftModifier) -> Bool
@@ -41,6 +50,19 @@ public protocol SwiftDeclaration {
 
 /// Default implementation for SwiftDeclaration methods
 extension SwiftDeclaration {
+    /// Declarations that cannot nest report no parent.
+    public var parentName: String? { nil }
+
+    /// `true` when the declaration is written inside another type.
+    public var isNested: Bool { parentName != nil }
+
+    /// The declaration's own name without the enclosing-type qualification:
+    /// `Inner` for a declaration named `Outer.Inner`.
+    public var simpleName: String {
+        guard let parentName, name.hasPrefix(parentName + ".") else { return name }
+        return String(name.dropFirst(parentName.count + 1))
+    }
+
     public func hasAnnotation(named name: String) -> Bool {
         annotations.contains { $0.name == name }
     }

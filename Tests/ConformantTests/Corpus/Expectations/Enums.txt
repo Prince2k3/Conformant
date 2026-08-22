@@ -46,7 +46,7 @@ fixture: Enums.swift
 - Expression @20:1
     rawType: <none>
     protocols: []
-    modifiers: []
+    modifiers: [indirect]
     annotations: []
     dependencies: [Expression/typeUsage@22:14, Expression/typeUsage@22:26, Int/typeUsage@21:18]
     cases:
@@ -60,7 +60,22 @@ fixture: Enums.swift
 ## protocols (0)
   <none>
 
+## actors (0)
+  <none>
+
 ## extensions (0)
+  <none>
+
+## typealiases (0)
+  <none>
+
+## macros (0)
+  <none>
+
+## operators (0)
+  <none>
+
+## precedence groups (0)
   <none>
 
 ## top-level functions (0)

@@ -33,6 +33,7 @@ public class SwiftFunctionDeclaration: SwiftDeclaration {
     public let dependencies: [SwiftDependency]
     public let filePath: String
     public let location: SourceLocation
+    public let parentName: String?
     public let parameters: [SwiftParameterDeclaration]
     public let returnType: String?
     public let body: String?  // Function body as a string
@@ -63,7 +64,8 @@ public class SwiftFunctionDeclaration: SwiftDeclaration {
         parameters: [SwiftParameterDeclaration],
         returnType: String?,
         body: String?,
-        effectSpecifiers: FunctionEffectSpecifiers = FunctionEffectSpecifiers()
+        effectSpecifiers: FunctionEffectSpecifiers = FunctionEffectSpecifiers(),
+        parentName: String? = nil
     ) {
         self.name = name
         self.modifiers = modifiers
@@ -77,6 +79,7 @@ public class SwiftFunctionDeclaration: SwiftDeclaration {
         self.isAsync = effectSpecifiers.isAsync
         self.isThrowing = effectSpecifiers.isThrowing || effectSpecifiers.isRethrows
         self.effectSpecifiers = effectSpecifiers
+        self.parentName = parentName
     }
 
     public func hasParameter(named name: String) -> Bool {

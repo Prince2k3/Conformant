@@ -46,7 +46,12 @@ enum ExtractionSnapshot {
         section(&out, "structs", file.structs.map(renderStruct))
         section(&out, "enums", file.enums.map(renderEnum))
         section(&out, "protocols", file.protocols.map(renderProtocol))
+        section(&out, "actors", file.actors.map(renderActor))
         section(&out, "extensions", file.extensions.map(renderExtension))
+        section(&out, "typealiases", file.typealiases.map(renderTypealias))
+        section(&out, "macros", file.macros.map(renderMacro))
+        section(&out, "operators", file.operators.map(renderOperator))
+        section(&out, "precedence groups", file.precedenceGroups.map(renderPrecedenceGroup))
         section(&out, "top-level functions", file.functions.map { renderFunction($0, indent: 0) })
         section(&out, "top-level properties", file.properties.map { renderProperty($0, indent: 0) })
 
@@ -77,24 +82,77 @@ enum ExtractionSnapshot {
     }
 
     private static func renderClass(_ decl: SwiftClassDeclaration) -> String {
-        var lines = ["- \(decl.name) @\(decl.location.line):\(decl.location.column)"]
+        var lines = [header(decl)]
         lines.append("    superclass: \(decl.superClass ?? "<none>")")
         lines.append("    protocols: \(list(decl.protocols))")
         lines.append(contentsOf: common(decl.modifiers, decl.annotations, decl.dependencies))
-        lines.append(contentsOf: members(decl.properties, decl.methods))
+        lines.append(contentsOf: members(
+            decl.properties,
+            decl.methods,
+            subscripts: decl.subscripts,
+            deinitializers: decl.deinitializers
+        ))
         return lines.joined(separator: "\n")
     }
 
     private static func renderStruct(_ decl: SwiftStructDeclaration) -> String {
-        var lines = ["- \(decl.name) @\(decl.location.line):\(decl.location.column)"]
+        var lines = [header(decl)]
         lines.append("    protocols: \(list(decl.protocols))")
         lines.append(contentsOf: common(decl.modifiers, decl.annotations, decl.dependencies))
-        lines.append(contentsOf: members(decl.properties, decl.methods))
+        lines.append(contentsOf: members(decl.properties, decl.methods, subscripts: decl.subscripts))
+        return lines.joined(separator: "\n")
+    }
+
+    private static func renderActor(_ decl: SwiftActorDeclaration) -> String {
+        var lines = [header(decl)]
+        lines.append("    protocols: \(list(decl.protocols))")
+        lines.append(contentsOf: common(decl.modifiers, decl.annotations, decl.dependencies))
+        lines.append(contentsOf: members(
+            decl.properties,
+            decl.methods,
+            subscripts: decl.subscripts,
+            deinitializers: decl.deinitializers
+        ))
+        return lines.joined(separator: "\n")
+    }
+
+    private static func renderTypealias(_ decl: SwiftTypealiasDeclaration) -> String {
+        var lines = [header(decl)]
+        lines.append("    aliases: \(decl.aliasedType)")
+        lines.append("    genericParameters: \(list(decl.genericParameters))")
+        lines.append(contentsOf: common(decl.modifiers, decl.annotations, decl.dependencies))
+        return lines.joined(separator: "\n")
+    }
+
+    private static func renderMacro(_ decl: SwiftMacroDeclaration) -> String {
+        var lines = [header(decl)]
+        lines.append("    parameters: \(list(decl.parameters.map(renderParameter)))")
+        lines.append("    returns: \(decl.returnType ?? "<none>")")
+        lines.append("    definition: \(decl.definition ?? "<none>")")
+        lines.append(contentsOf: common(decl.modifiers, decl.annotations, decl.dependencies))
+        return lines.joined(separator: "\n")
+    }
+
+    private static func renderOperator(_ decl: SwiftOperatorDeclaration) -> String {
+        var lines = [header(decl)]
+        lines.append("    fixity: \(decl.fixity.rawValue)")
+        lines.append("    precedenceGroup: \(decl.precedenceGroup ?? "<none>")")
+        lines.append(contentsOf: common(decl.modifiers, decl.annotations, decl.dependencies))
+        return lines.joined(separator: "\n")
+    }
+
+    private static func renderPrecedenceGroup(_ decl: SwiftPrecedenceGroupDeclaration) -> String {
+        var lines = [header(decl)]
+        lines.append("    associativity: \(decl.associativity ?? "<none>")")
+        lines.append("    assignment: \(decl.isAssignment)")
+        lines.append("    higherThan: \(list(decl.higherThan))")
+        lines.append("    lowerThan: \(list(decl.lowerThan))")
+        lines.append(contentsOf: common(decl.modifiers, decl.annotations, decl.dependencies))
         return lines.joined(separator: "\n")
     }
 
     private static func renderEnum(_ decl: SwiftEnumDeclaration) -> String {
-        var lines = ["- \(decl.name) @\(decl.location.line):\(decl.location.column)"]
+        var lines = [header(decl)]
         lines.append("    rawType: \(decl.rawType ?? "<none>")")
         lines.append("    protocols: \(list(decl.protocols))")
         lines.append(contentsOf: common(decl.modifiers, decl.annotations, decl.dependencies))
@@ -108,23 +166,28 @@ enum ExtractionSnapshot {
                 lines.append("      - \(enumCase.name)\(associated)\(raw)")
             }
         }
-        lines.append(contentsOf: members(decl.properties, decl.methods))
+        lines.append(contentsOf: members(decl.properties, decl.methods, subscripts: decl.subscripts))
         return lines.joined(separator: "\n")
     }
 
     private static func renderProtocol(_ decl: SwiftProtocolDeclaration) -> String {
-        var lines = ["- \(decl.name) @\(decl.location.line):\(decl.location.column)"]
+        var lines = [header(decl)]
         lines.append("    inherits: \(list(decl.inheritedProtocols))")
         lines.append(contentsOf: common(decl.modifiers, decl.annotations, decl.dependencies))
-        lines.append(contentsOf: members(decl.propertyRequirements, decl.methodRequirements))
+        lines.append(contentsOf: members(
+            decl.propertyRequirements,
+            decl.methodRequirements,
+            subscripts: decl.subscriptRequirements,
+            associatedTypes: decl.associatedTypes
+        ))
         return lines.joined(separator: "\n")
     }
 
     private static func renderExtension(_ decl: SwiftExtensionDeclaration) -> String {
-        var lines = ["- \(decl.name) @\(decl.location.line):\(decl.location.column)"]
+        var lines = [header(decl)]
         lines.append("    protocols: \(list(decl.protocols))")
         lines.append(contentsOf: common(decl.modifiers, decl.annotations, decl.dependencies))
-        lines.append(contentsOf: members(decl.properties, decl.methods))
+        lines.append(contentsOf: members(decl.properties, decl.methods, subscripts: decl.subscripts))
         return lines.joined(separator: "\n")
     }
 
@@ -132,7 +195,10 @@ enum ExtractionSnapshot {
 
     private static func members(
         _ properties: [SwiftPropertyDeclaration],
-        _ methods: [SwiftFunctionDeclaration]
+        _ methods: [SwiftFunctionDeclaration],
+        subscripts: [SwiftSubscriptDeclaration] = [],
+        deinitializers: [SwiftDeinitializerDeclaration] = [],
+        associatedTypes: [SwiftAssociatedTypeDeclaration] = []
     ) -> [String] {
         var lines: [String] = []
         lines.append("    properties:")
@@ -143,7 +209,44 @@ enum ExtractionSnapshot {
         lines.append(contentsOf: methods.isEmpty
             ? ["      <none>"]
             : methods.map { renderFunction($0, indent: 6) })
+        // Only rendered when present, so files without them keep a compact snapshot.
+        if !subscripts.isEmpty {
+            lines.append("    subscripts:")
+            lines.append(contentsOf: subscripts.map(renderSubscript))
+        }
+        if !deinitializers.isEmpty {
+            lines.append("    deinitializers:")
+            lines.append(contentsOf: deinitializers.map(renderDeinitializer))
+        }
+        if !associatedTypes.isEmpty {
+            lines.append("    associatedTypes:")
+            lines.append(contentsOf: associatedTypes.map(renderAssociatedType))
+        }
         return lines
+    }
+
+    private static func renderSubscript(_ decl: SwiftSubscriptDeclaration) -> String {
+        var lines = ["      - subscript @\(decl.location.line):\(decl.location.column)"]
+        lines.append("          parameters: \(list(decl.parameters.map(renderParameter)))")
+        lines.append("          returns: \(decl.returnType)")
+        lines.append("          accessors: \(list(decl.accessors))")
+        lines.append(contentsOf: common(decl.modifiers, decl.annotations, decl.dependencies, pad: "      "))
+        return lines.joined(separator: "\n")
+    }
+
+    private static func renderDeinitializer(_ decl: SwiftDeinitializerDeclaration) -> String {
+        var lines = ["      - deinit @\(decl.location.line):\(decl.location.column)"]
+        lines.append("          hasBody: \(decl.body != nil)")
+        lines.append(contentsOf: common(decl.modifiers, decl.annotations, decl.dependencies, pad: "      "))
+        return lines.joined(separator: "\n")
+    }
+
+    private static func renderAssociatedType(_ decl: SwiftAssociatedTypeDeclaration) -> String {
+        var lines = ["      - \(decl.name) @\(decl.location.line):\(decl.location.column)"]
+        lines.append("          inherits: \(list(decl.inheritedTypes))")
+        lines.append("          default: \(decl.defaultType ?? "<none>")")
+        lines.append(contentsOf: common(decl.modifiers, decl.annotations, decl.dependencies, pad: "      "))
+        return lines.joined(separator: "\n")
     }
 
     private static func renderProperty(_ decl: SwiftPropertyDeclaration, indent: Int) -> String {
@@ -158,11 +261,7 @@ enum ExtractionSnapshot {
     private static func renderFunction(_ decl: SwiftFunctionDeclaration, indent: Int) -> String {
         let pad = String(repeating: " ", count: indent)
         var lines = ["\(pad)- \(decl.name) @\(decl.location.line):\(decl.location.column)"]
-        let parameters = decl.parameters.map { parameter -> String in
-            let defaultValue = parameter.defaultValue.map { " = \($0)" } ?? ""
-            return "\(parameter.name): \(parameter.type)\(defaultValue)"
-        }
-        lines.append("\(pad)    parameters: \(list(parameters))")
+        lines.append("\(pad)    parameters: \(list(decl.parameters.map(renderParameter)))")
         lines.append("\(pad)    returns: \(decl.returnType ?? "<none>")")
         let effects = decl.effectSpecifiers
         lines.append("\(pad)    effects: async=\(effects.isAsync) throws=\(effects.isThrowing) rethrows=\(effects.isRethrows)")
@@ -172,6 +271,20 @@ enum ExtractionSnapshot {
     }
 
     // MARK: - Shared fields
+
+    /// The `- Name @line:column` line, plus `parent:` when the declaration is nested.
+    private static func header(_ decl: some SwiftDeclaration) -> String {
+        let position = "@\(decl.location.line):\(decl.location.column)"
+        guard let parentName = decl.parentName else {
+            return "- \(decl.name) \(position)"
+        }
+        return "- \(decl.name) \(position)\n    parent: \(parentName)"
+    }
+
+    private static func renderParameter(_ parameter: SwiftParameterDeclaration) -> String {
+        let defaultValue = parameter.defaultValue.map { " = \($0)" } ?? ""
+        return "\(parameter.name): \(parameter.type)\(defaultValue)"
+    }
 
     private static func common(
         _ modifiers: [SwiftModifier],

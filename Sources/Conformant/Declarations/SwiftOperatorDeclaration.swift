@@ -1,5 +1,5 @@
 //
-//  SwiftExtensionDeclaration.swift
+//  SwiftOperatorDeclaration.swift
 //  Conformant
 //
 //  Copyright © 2025 Prince Ugwuh. All rights reserved.
@@ -26,19 +26,25 @@
 
 import Foundation
 
-/// Represents a Swift extension declaration
-public class SwiftExtensionDeclaration: SwiftDeclaration {
+/// Represents an `operator` declaration such as `infix operator |>: AdditionPrecedence`.
+public class SwiftOperatorDeclaration: SwiftDeclaration {
+    /// Where the operator sits relative to its operands.
+    public enum Fixity: String, Sendable {
+        case prefix
+        case infix
+        case postfix
+    }
+
     public let name: String
     public let modifiers: [SwiftModifier]
     public let annotations: [SwiftAnnotation]
     public let dependencies: [SwiftDependency]
     public let filePath: String
     public let location: SourceLocation
-    public let parentName: String?
-    public let properties: [SwiftPropertyDeclaration]
-    public let methods: [SwiftFunctionDeclaration]
-    public let subscripts: [SwiftSubscriptDeclaration]
-    public let protocols: [String]
+    public let fixity: Fixity
+
+    /// The precedence group named after the colon, if one was written.
+    public let precedenceGroup: String?
 
     init(
         name: String,
@@ -47,11 +53,8 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
         dependencies: [SwiftDependency],
         filePath: String,
         location: SourceLocation,
-        properties: [SwiftPropertyDeclaration],
-        methods: [SwiftFunctionDeclaration],
-        protocols: [String],
-        subscripts: [SwiftSubscriptDeclaration] = [],
-        parentName: String? = nil
+        fixity: Fixity,
+        precedenceGroup: String?
     ) {
         self.name = name
         self.modifiers = modifiers
@@ -59,14 +62,7 @@ public class SwiftExtensionDeclaration: SwiftDeclaration {
         self.dependencies = dependencies
         self.filePath = filePath
         self.location = location
-        self.properties = properties
-        self.methods = methods
-        self.protocols = protocols
-        self.subscripts = subscripts
-        self.parentName = parentName
-    }
-
-    public func implements(protocol protocolName: String) -> Bool {
-        protocols.contains(protocolName)
+        self.fixity = fixity
+        self.precedenceGroup = precedenceGroup
     }
 }

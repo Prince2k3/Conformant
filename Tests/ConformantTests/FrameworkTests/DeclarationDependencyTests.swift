@@ -138,7 +138,7 @@ final class DeclarationDependencyTests: XCTestCase {
     }
 
     func testExtractTypeNamesHelper() {
-        let visitor = SwiftSyntaxVisitor(
+        let collector = DeclarationCollector(
             filePath: "dummy",
             converter: SourceLocationConverter(
                 fileName: "dummy",
@@ -147,16 +147,16 @@ final class DeclarationDependencyTests: XCTestCase {
             diagnostics: DiagnosticSink()
         )
 
-        XCTAssertEqual(visitor.extractTypeNames(from: "String"), ["String"])
-        XCTAssertEqual(visitor.extractTypeNames(from: "String?"), ["String"])
-        XCTAssertEqual(visitor.extractTypeNames(from: "[Int]"), ["Int"])
-        XCTAssertEqual(visitor.extractTypeNames(from: "[String: Int]"), ["String", "Int"])
-        XCTAssertEqual(visitor.extractTypeNames(from: "Optional<URLSession>"), ["Optional", "URLSession"])
-        XCTAssertEqual(visitor.extractTypeNames(from: "(Result<MyType, MyError>) -> Void"), ["Result", "MyType", "MyError", "Void"]) // Current basic logic
-        XCTAssertEqual(visitor.extractTypeNames(from: "MyModule.MyType"), ["MyModule", "MyType"])
+        XCTAssertEqual(collector.extractTypeNames(from: "String"), ["String"])
+        XCTAssertEqual(collector.extractTypeNames(from: "String?"), ["String"])
+        XCTAssertEqual(collector.extractTypeNames(from: "[Int]"), ["Int"])
+        XCTAssertEqual(collector.extractTypeNames(from: "[String: Int]"), ["String", "Int"])
+        XCTAssertEqual(collector.extractTypeNames(from: "Optional<URLSession>"), ["Optional", "URLSession"])
+        XCTAssertEqual(collector.extractTypeNames(from: "(Result<MyType, MyError>) -> Void"), ["Result", "MyType", "MyError", "Void"]) // Current basic logic
+        XCTAssertEqual(collector.extractTypeNames(from: "MyModule.MyType"), ["MyModule", "MyType"])
         // Assuming 'any'/'some' are added later or handled
-        XCTAssertEqual(visitor.extractTypeNames(from: "any Equatable"), ["Equatable"])
-        XCTAssertEqual(visitor.extractTypeNames(from: "T"), ["T"])
+        XCTAssertEqual(collector.extractTypeNames(from: "any Equatable"), ["Equatable"])
+        XCTAssertEqual(collector.extractTypeNames(from: "T"), ["T"])
     }
 
     func testComplexTypeDependencies() throws {
