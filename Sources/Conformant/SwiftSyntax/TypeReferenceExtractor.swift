@@ -54,6 +54,15 @@ struct TypeReferenceExtractor {
         return walk(type, form: .plain).flatMap(\.flattened).filter { !isBound($0) }
     }
 
+    /// The references written by one generic argument. `Vector<3>` writes a value there,
+    /// not a type, and a value names nothing to depend on.
+    func references(in argument: GenericArgumentSyntax.Argument) -> [TypeReference] {
+        switch argument {
+        case .type(let type): return references(in: type)
+        case .expr: return []
+        }
+    }
+
     /// Whether a reference is rooted at a name bound in the current scope. `Element` is
     /// bound by `struct Box<Element>`; so is `Element.ID`, because it names a member of
     /// the placeholder rather than a type of its own.
@@ -100,6 +109,13 @@ struct TypeReferenceExtractor {
 
         case .arrayType(let node):
             return walk(node.element, form: .array)
+
+        case .inlineArrayType(let node):
+            // `[3 of Int]`. The count is a value, not a type, so only the element can
+            // name one — but both are written as generic arguments and `walk` already
+            // drops the value form, so asking for both costs nothing and keeps the
+            // count's `[N of Int]` spelling, where `N` is a written name, visible.
+            return walk(node.count.argument, form: .array) + walk(node.element.argument, form: .array)
 
         case .dictionaryType(let node):
             return walk(node.key, form: .dictionary) + walk(node.value, form: .dictionary)
@@ -159,6 +175,18 @@ struct TypeReferenceExtractor {
     ) -> [TypeReference] {
         guard let clause else { return [] }
         return clause.arguments.flatMap { walk($0.argument, form: form) }
+    }
+
+    /// A generic argument is not always a type: since value generics, `Vector<3>` writes
+    /// an expression where a type used to go. A value names no type, so it contributes
+    /// no dependency.
+    private func walk(_ argument: GenericArgumentSyntax.Argument, form: TypeReference.Form) -> [TypeReference] {
+        switch argument {
+        case .type(let type):
+            return walk(type, form: form)
+        case .expr:
+            return []
+        }
     }
 
     /// Rebuilds `A.B.C` without generic clauses, so `Swift.Array<Int>.Index` reads as

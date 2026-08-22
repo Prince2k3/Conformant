@@ -94,8 +94,15 @@ fixture: Attributes.swift
 ## precedence groups (0)
   <none>
 
-## top-level functions (0)
-  <none>
+## top-level functions (1)
+- entry @22:1
+    parameters: []
+    returns: <none>
+    effects: async=false throws=false rethrows=false
+    hasBody: true
+    modifiers: []
+    annotations: [@_silgen_name(_: "c_entry")]
+    dependencies: []
 
 ## top-level properties (0)
   <none>

@@ -95,7 +95,10 @@ final class BodyDependencyCollector: SyntaxVisitor {
     /// written type `Repository<User>` would.
     override func visit(_ node: GenericSpecializationExprSyntax) -> SyntaxVisitorContinueKind {
         for argument in node.genericArgumentClause.arguments {
-            record(type: argument.argument)
+            // A value generic — the `3` in `Vector<3>` — writes an expression here and
+            // names no type.
+            guard case .type(let type) = argument.argument else { continue }
+            record(type: type)
         }
         return .visitChildren
     }

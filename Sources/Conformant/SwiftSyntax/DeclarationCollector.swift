@@ -1089,8 +1089,10 @@ final class DeclarationCollector {
                 case .conformanceRequirement(let node):
                     append(node.rightType)
                 case .sameTypeRequirement(let node):
-                    append(node.leftType)
-                    append(node.rightType)
+                    // Either side can be a value since value generics — `where N == 3`
+                    // constrains a count, and a value names no type.
+                    if case .type(let left) = node.leftType { append(left) }
+                    if case .type(let right) = node.rightType { append(right) }
                 case .layoutRequirement:
                     // `T: AnyObject`-style layout constraints name no type.
                     break
@@ -1185,8 +1187,6 @@ final class DeclarationCollector {
                         // Unlabelled arguments share the "_" key; the last one wins.
                         arguments[element.label?.text ?? "_"] = element.expression.trimmedDescription
                     }
-                case .string(let literal):
-                    arguments["_"] = literal.segments.trimmedDescription
                 case .availability(let availability):
                     for argument in availability {
                         let syntax = Syntax(argument.argument)

@@ -18,3 +18,6 @@ enum ViewBuilder2 {
 struct App {
     static func main() {}
 }
+
+@_silgen_name("c_entry")
+func entry() {}
