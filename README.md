@@ -22,7 +22,7 @@ Add Conformant to your `Package.swift` file:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/yourusername/Conformant.git", from: "0.1.0")
+    .package(url: "https://github.com/Prince2k3/Conformant.git", from: "0.2.0")
 ]
 ```
 
