@@ -26,7 +26,7 @@ fixture: MembersAndSpecials.swift
     protocols: []
     modifiers: []
     annotations: []
-    dependencies: [Bool/typeUsage@6:53, Container/typeUsage@6:26, Container/typeUsage@6:42, Element/typeUsage@2:27, Int/typeUsage@2:22, RawInput/typeUsage@8:21]
+    dependencies: [Bool/typeUsage/plain@6:53, Container/typeUsage/plain@6:26, Container/typeUsage/plain@6:42, Element/typeUsage/plain@2:27, Int/typeUsage/plain@2:22, RawInput/typeUsage/plain@8:21]
     properties:
       <none>
     methods:
@@ -37,7 +37,7 @@ fixture: MembersAndSpecials.swift
           hasBody: true
           modifiers: [static]
           annotations: []
-          dependencies: [Bool/typeUsage@6:53, Container/typeUsage@6:26, Container/typeUsage@6:42]
+          dependencies: [Bool/typeUsage/plain@6:53, Container/typeUsage/plain@6:26, Container/typeUsage/plain@6:42]
       - init @8:5
           parameters: [failable: RawInput]
           returns: <none>
@@ -45,7 +45,7 @@ fixture: MembersAndSpecials.swift
           hasBody: true
           modifiers: []
           annotations: []
-          dependencies: [RawInput/typeUsage@8:21]
+          dependencies: [RawInput/typeUsage/plain@8:21]
     subscripts:
       - subscript @2:5
           parameters: [index: Int]
@@ -53,7 +53,7 @@ fixture: MembersAndSpecials.swift
           accessors: [get]
           modifiers: []
           annotations: []
-          dependencies: [Element/typeUsage@2:27, Int/typeUsage@2:22]
+          dependencies: [Element/typeUsage/plain@2:27, Int/typeUsage/plain@2:22]
 
 ## enums (0)
   <none>
@@ -73,7 +73,7 @@ fixture: MembersAndSpecials.swift
     genericParameters: []
     modifiers: []
     annotations: []
-    dependencies: [Data/typeUsage@17:21, NetworkError/typeUsage@17:21, Result/typeUsage@17:21, Void/typeUsage@17:21]
+    dependencies: [Data/typeUsage/plain@17:21, NetworkError/typeUsage/plain@17:21, Result/typeUsage/function@17:21, Void/typeUsage/function@17:21]
 - Pair @18:1
     aliases: (T, T)
     genericParameters: [T]

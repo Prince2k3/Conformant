@@ -21,14 +21,14 @@ fixture: NestedTypes.swift
     protocols: []
     modifiers: [public]
     annotations: []
-    dependencies: [Inner/typeUsage@17:16]
+    dependencies: [Inner/typeUsage/plain@17:16]
     properties:
       - inner: Inner @17:9
           computed: false
           initialValue: <none>
           modifiers: []
           annotations: []
-          dependencies: [Inner/typeUsage@17:16]
+          dependencies: [Inner/typeUsage/plain@17:16]
     methods:
       <none>
 - Outer.Inner @2:5
@@ -36,14 +36,14 @@ fixture: NestedTypes.swift
     protocols: []
     modifiers: [public]
     annotations: []
-    dependencies: [UserRepository/typeUsage@3:25]
+    dependencies: [UserRepository/typeUsage/plain@3:25]
     properties:
       - repository: UserRepository @3:13
           computed: false
           initialValue: <none>
           modifiers: []
           annotations: []
-          dependencies: [UserRepository/typeUsage@3:25]
+          dependencies: [UserRepository/typeUsage/plain@3:25]
     methods:
       <none>
 - Outer.DeeplyNested.EvenDeeper @12:9
@@ -51,14 +51,14 @@ fixture: NestedTypes.swift
     protocols: []
     modifiers: []
     annotations: []
-    dependencies: [NetworkClient/typeUsage@13:25]
+    dependencies: [NetworkClient/typeUsage/plain@13:25]
     properties:
       - client: NetworkClient @13:17
           computed: false
           initialValue: <none>
           modifiers: []
           annotations: []
-          dependencies: [NetworkClient/typeUsage@13:25]
+          dependencies: [NetworkClient/typeUsage/plain@13:25]
     methods:
       <none>
 

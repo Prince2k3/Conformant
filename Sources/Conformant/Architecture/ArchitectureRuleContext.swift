@@ -76,7 +76,7 @@ public struct ArchitectureRuleContext {
         }
 
         let matchingDeclarations = declarations.filter {
-            $0.name == dependency.name
+            dependency.matches($0.name)
         }
 
         for declaration in matchingDeclarations {

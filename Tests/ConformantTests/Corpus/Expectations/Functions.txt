@@ -52,7 +52,7 @@ fixture: Functions.swift
     hasBody: true
     modifiers: [public]
     annotations: []
-    dependencies: [Data/typeUsage@3:58, Int/typeUsage@3:25, NetworkError/typeUsage@3:64, Result/typeUsage@3:64, String/typeUsage@3:39, User/typeUsage@3:64]
+    dependencies: [Data/typeUsage/plain@3:58, Int/typeUsage/plain@3:25, NetworkError/typeUsage/plain@3:64, Result/typeUsage/plain@3:64, String/typeUsage/plain@3:39, User/typeUsage/plain@3:64]
 - asyncThrowing @7:1
     parameters: []
     returns: Void
@@ -60,7 +60,7 @@ fixture: Functions.swift
     hasBody: true
     modifiers: []
     annotations: []
-    dependencies: [Void/typeUsage@7:35]
+    dependencies: [Void/typeUsage/plain@7:35]
 - rethrowing @9:1
     parameters: [body: () throws -> Void]
     returns: <none>
@@ -68,7 +68,7 @@ fixture: Functions.swift
     hasBody: true
     modifiers: []
     annotations: []
-    dependencies: [Void/typeUsage@9:25]
+    dependencies: [Void/typeUsage/function@9:25]
 - annotated @11:1
     parameters: [value: T]
     returns: T
@@ -76,7 +76,7 @@ fixture: Functions.swift
     hasBody: true
     modifiers: []
     annotations: [@discardableResult, @inlinable]
-    dependencies: [T/typeUsage@13:38, T/typeUsage@13:41]
+    dependencies: []
 
 ## top-level properties (0)
   <none>

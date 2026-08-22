@@ -32,7 +32,13 @@ import SwiftParserDiagnostics
 /// Parser that uses SwiftSyntax to extract declarations from Swift files
 public class SwiftSyntaxParser {
 
-    public init() {}
+    /// See `ScopePolicy.ignoresStandardLibraryTypes`. Off by default: dropping
+    /// dependencies can only make an architecture rule easier to satisfy.
+    private let ignoresStandardLibraryTypes: Bool
+
+    public init(ignoresStandardLibraryTypes: Bool = false) {
+        self.ignoresStandardLibraryTypes = ignoresStandardLibraryTypes
+    }
 
     public func parseFile(path: String) throws -> SwiftFile {
         let url = URL(fileURLWithPath: path)
@@ -60,7 +66,12 @@ public class SwiftSyntaxParser {
         // it were complete, and the declarations it lost would look like clean code.
         collectSyntaxDiagnostics(in: sourceFile, converter: converter, path: canonicalPath, into: sink)
 
-        let collector = DeclarationCollector(filePath: canonicalPath, converter: converter, diagnostics: sink)
+        let collector = DeclarationCollector(
+            filePath: canonicalPath,
+            converter: converter,
+            diagnostics: sink,
+            ignoresStandardLibraryTypes: ignoresStandardLibraryTypes
+        )
         collector.collect(from: sourceFile)
         return collector.makeSwiftFile()
     }

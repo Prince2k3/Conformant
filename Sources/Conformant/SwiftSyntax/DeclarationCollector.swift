@@ -53,6 +53,14 @@ final class DeclarationCollector {
     private let converter: SourceLocationConverter
     let diagnostics: DiagnosticSink
 
+    /// See `ScopePolicy.ignoresStandardLibraryTypes`.
+    private let ignoresStandardLibraryTypes: Bool
+
+    /// Type names bound by the declaration currently being walked — its generic
+    /// parameters, the `associatedtype`s of the protocol it belongs to, and `Self`.
+    /// A reference rooted at one of these names is a placeholder, not a dependency.
+    private var boundNames: Set<String> = []
+
     private(set) var imports: [SwiftImportDeclaration] = []
     private(set) var classes: [SwiftClassDeclaration] = []
     private(set) var structs: [SwiftStructDeclaration] = []
@@ -67,10 +75,26 @@ final class DeclarationCollector {
     private(set) var topLevelFunctions: [SwiftFunctionDeclaration] = []
     private(set) var topLevelProperties: [SwiftPropertyDeclaration] = []
 
-    init(filePath: String, converter: SourceLocationConverter, diagnostics: DiagnosticSink) {
+    init(
+        filePath: String,
+        converter: SourceLocationConverter,
+        diagnostics: DiagnosticSink,
+        ignoresStandardLibraryTypes: Bool = false
+    ) {
         self.filePath = filePath
         self.converter = converter
         self.diagnostics = diagnostics
+        self.ignoresStandardLibraryTypes = ignoresStandardLibraryTypes
+    }
+
+    /// Runs `body` with `names` added to the bound set, then restores it. Nesting is
+    /// additive: a method's `<T>` joins, rather than replaces, its type's `<Element>`.
+    private func binding<Result>(_ names: Set<String>, _ body: () -> Result) -> Result {
+        guard !names.isEmpty else { return body() }
+        let outer = boundNames
+        boundNames.formUnion(names)
+        defer { boundNames = outer }
+        return body()
     }
 
     // MARK: - Entry point
@@ -204,23 +228,16 @@ final class DeclarationCollector {
         }
     }
 
-    /// - Parameter genericParameters: names bound by the container's generic clause.
-    ///   A reference to one of them is not a dependency on an outside type.
-    private func members(
-        of memberBlock: MemberBlockSyntax,
-        owner: String,
-        genericParameters: Set<String> = []
-    ) -> MemberSet {
+    private func memberSet(of memberBlock: MemberBlockSyntax, owner: String) -> MemberSet {
         var collected = MemberSet()
-        collectMembers(memberBlock.members, into: &collected, owner: owner, genericParameters: genericParameters)
+        collectMembers(memberBlock.members, into: &collected, owner: owner)
         return collected
     }
 
     private func collectMembers(
         _ items: MemberBlockItemListSyntax,
         into collected: inout MemberSet,
-        owner: String,
-        genericParameters: Set<String>
+        owner: String
     ) {
         for item in items {
             let decl = item.decl
@@ -238,12 +255,12 @@ final class DeclarationCollector {
             case .associatedTypeDecl(let node):
                 collected.associatedTypes.append(makeAssociatedType(node, parent: owner))
             case .enumCaseDecl(let node):
-                appendCases(from: node, into: &collected, genericParameters: genericParameters)
+                appendCases(from: node, into: &collected)
             case .ifConfigDecl(let node):
                 for clause in node.clauses {
                     switch clause.elements {
                     case .decls(let nested):
-                        collectMembers(nested, into: &collected, owner: owner, genericParameters: genericParameters)
+                        collectMembers(nested, into: &collected, owner: owner)
                     case .statements(let statements):
                         collect(statements: statements)
                     default:
@@ -264,25 +281,29 @@ final class DeclarationCollector {
         var superClass: String?
         var protocolNames: [String] = []
 
-        if let inheritanceClause = node.inheritanceClause {
-            for (index, inheritance) in inheritanceClause.inheritedTypes.enumerated() {
-                let typeSyntax = Syntax(inheritance.type)
-                let typeName = typeSyntax.trimmedDescription
-                let depLocation = location(of: typeSyntax)
+        let members: MemberSet = binding(scopeNames(node.genericParameterClause)) {
+            if let inheritanceClause = node.inheritanceClause {
+                for (index, inheritance) in inheritanceClause.inheritedTypes.enumerated() {
+                    let typeName = inheritance.type.trimmedDescription
+                    let depLocation = location(of: Syntax(inheritance.type))
 
-                // The first entry *may* be a superclass; without semantic analysis the
-                // parser cannot tell a base class from a protocol.
-                if index == 0 {
-                    superClass = typeName
-                    dependencies.append(contentsOf: dependenciesFor(typeName, kind: .inheritance, at: depLocation))
-                } else {
-                    protocolNames.append(typeName)
-                    dependencies.append(contentsOf: dependenciesFor(typeName, kind: .conformance, at: depLocation))
+                    // The first entry *may* be a superclass; without semantic analysis the
+                    // parser cannot tell a base class from a protocol.
+                    if index == 0 {
+                        superClass = typeName
+                        dependencies.append(contentsOf: typeDependencies(
+                            on: inheritance.type, kind: .inheritance, at: depLocation
+                        ))
+                    } else {
+                        protocolNames.append(typeName)
+                        dependencies.append(contentsOf: typeDependencies(
+                            on: inheritance.type, kind: .conformance, at: depLocation
+                        ))
+                    }
                 }
             }
+            return memberSet(of: node.memberBlock, owner: name)
         }
-
-        let members = members(of: node.memberBlock, owner: name, genericParameters: genericNames(node.genericParameterClause))
         dependencies.append(contentsOf: members.dependencies)
 
         return SwiftClassDeclaration(
@@ -305,9 +326,12 @@ final class DeclarationCollector {
     private func makeStruct(_ node: StructDeclSyntax, parent: String?) -> SwiftStructDeclaration {
         let name = qualify(node.name.text, in: parent)
         var dependencies: [SwiftDependency] = []
-        let protocolNames = conformances(node.inheritanceClause, into: &dependencies)
+        var protocolNames: [String] = []
 
-        let members = members(of: node.memberBlock, owner: name, genericParameters: genericNames(node.genericParameterClause))
+        let members: MemberSet = binding(scopeNames(node.genericParameterClause)) {
+            protocolNames = conformances(node.inheritanceClause, into: &dependencies)
+            return memberSet(of: node.memberBlock, owner: name)
+        }
         dependencies.append(contentsOf: members.dependencies)
 
         return SwiftStructDeclaration(
@@ -328,10 +352,13 @@ final class DeclarationCollector {
     private func makeActor(_ node: ActorDeclSyntax, parent: String?) -> SwiftActorDeclaration {
         let name = qualify(node.name.text, in: parent)
         var dependencies: [SwiftDependency] = []
-        // An actor cannot inherit, so every inherited type is a conformance.
-        let protocolNames = conformances(node.inheritanceClause, into: &dependencies)
+        var protocolNames: [String] = []
 
-        let members = members(of: node.memberBlock, owner: name, genericParameters: genericNames(node.genericParameterClause))
+        let members: MemberSet = binding(scopeNames(node.genericParameterClause)) {
+            // An actor cannot inherit, so every inherited type is a conformance.
+            protocolNames = conformances(node.inheritanceClause, into: &dependencies)
+            return memberSet(of: node.memberBlock, owner: name)
+        }
         dependencies.append(contentsOf: members.dependencies)
 
         return SwiftActorDeclaration(
@@ -356,39 +383,42 @@ final class DeclarationCollector {
         var protocolNames: [String] = []
         var rawType: String?
 
-        if let inheritanceClause = node.inheritanceClause {
-            for inheritance in inheritanceClause.inheritedTypes {
-                let typeSyntax = Syntax(inheritance.type)
-                let typeName = typeSyntax.trimmedDescription
-                let depLocation = location(of: typeSyntax)
+        let members: MemberSet = binding(scopeNames(node.genericParameterClause)) {
+            if let inheritanceClause = node.inheritanceClause {
+                for inheritance in inheritanceClause.inheritedTypes {
+                    let typeName = inheritance.type.trimmedDescription
+                    let depLocation = location(of: Syntax(inheritance.type))
 
-                let commonRawTypes = ["String", "Int", "UInt", "Float", "Double", "Character", "RawRepresentable"]
-                if rawType == nil, commonRawTypes.contains(where: { typeName.hasPrefix($0) }) {
-                    // A raw value and a conformance are spelled identically; assume the
-                    // first entry that names a common raw type is the raw type.
-                    rawType = typeName
-                    dependencies.append(contentsOf: dependenciesFor(typeName, kind: .typeUsage, at: depLocation))
-                } else {
-                    protocolNames.append(typeName)
-                    dependencies.append(contentsOf: dependenciesFor(typeName, kind: .conformance, at: depLocation))
+                    let commonRawTypes = ["String", "Int", "UInt", "Float", "Double", "Character", "RawRepresentable"]
+                    if rawType == nil, commonRawTypes.contains(where: { typeName.hasPrefix($0) }) {
+                        // A raw value and a conformance are spelled identically; assume the
+                        // first entry that names a common raw type is the raw type.
+                        rawType = typeName
+                        dependencies.append(contentsOf: typeDependencies(
+                            on: inheritance.type, kind: .typeUsage, at: depLocation
+                        ))
+                    } else {
+                        protocolNames.append(typeName)
+                        dependencies.append(contentsOf: typeDependencies(
+                            on: inheritance.type, kind: .conformance, at: depLocation
+                        ))
+                    }
                 }
             }
-        }
 
-        let generics = genericNames(node.genericParameterClause)
-        if let genericClause = node.genericParameterClause {
-            for parameter in genericClause.parameters {
-                guard let constraint = parameter.inheritedType else { continue }
-                let typeSyntax = Syntax(constraint)
-                dependencies.append(contentsOf: dependenciesFor(
-                    typeSyntax.trimmedDescription,
-                    kind: .conformance,
-                    at: location(of: typeSyntax)
-                ))
+            if let genericClause = node.genericParameterClause {
+                for parameter in genericClause.parameters {
+                    guard let constraint = parameter.inheritedType else { continue }
+                    dependencies.append(contentsOf: typeDependencies(
+                        on: constraint,
+                        kind: .conformance,
+                        at: location(of: Syntax(constraint))
+                    ))
+                }
             }
-        }
 
-        let members = members(of: node.memberBlock, owner: name, genericParameters: generics)
+            return memberSet(of: node.memberBlock, owner: name)
+        }
         dependencies.append(contentsOf: members.dependencies)
 
         return SwiftEnumDeclaration(
@@ -411,9 +441,14 @@ final class DeclarationCollector {
     private func makeProtocol(_ node: ProtocolDeclSyntax, parent: String?) -> SwiftProtocolDeclaration {
         let name = qualify(node.name.text, in: parent)
         var dependencies: [SwiftDependency] = []
-        let inherited = conformances(node.inheritanceClause, into: &dependencies)
+        var inherited: [String] = []
 
-        let members = members(of: node.memberBlock, owner: name)
+        // Associated types are bound for the whole protocol body, including requirements
+        // written above the `associatedtype` that introduces them.
+        let members: MemberSet = binding(associatedTypeNames(in: node.memberBlock).union(["Self"])) {
+            inherited = conformances(node.inheritanceClause, into: &dependencies)
+            return memberSet(of: node.memberBlock, owner: name)
+        }
         dependencies.append(contentsOf: members.dependencies)
 
         return SwiftProtocolDeclaration(
@@ -435,16 +470,21 @@ final class DeclarationCollector {
     private func makeExtension(_ node: ExtensionDeclSyntax, parent: String?) -> SwiftExtensionDeclaration {
         let name = node.extendedType.trimmedDescription
         var dependencies: [SwiftDependency] = []
-        let protocolNames = conformances(node.inheritanceClause, into: &dependencies)
+        var protocolNames: [String] = []
 
-        let extendedSyntax = Syntax(node.extendedType)
-        dependencies.append(contentsOf: dependenciesFor(
-            extendedSyntax.trimmedDescription,
-            kind: .extension,
-            at: location(of: extendedSyntax)
-        ))
-
-        let members = members(of: node.memberBlock, owner: name)
+        // An extension cannot introduce generic parameters of its own, and the ones it
+        // inherits from the extended type are invisible without a type checker: in
+        // `extension Box { func first() -> Element }`, `Element` is still recorded as a
+        // dependency.
+        let members: MemberSet = binding(["Self"]) {
+            protocolNames = conformances(node.inheritanceClause, into: &dependencies)
+            dependencies.append(contentsOf: typeDependencies(
+                on: node.extendedType,
+                kind: .extension,
+                at: location(of: Syntax(node.extendedType))
+            ))
+            return memberSet(of: node.memberBlock, owner: name)
+        }
         dependencies.append(contentsOf: members.dependencies)
 
         return SwiftExtensionDeclaration(
@@ -498,7 +538,9 @@ final class DeclarationCollector {
 
     private func makeFunction(_ node: FunctionDeclSyntax, parent: String?) -> SwiftFunctionDeclaration {
         let parameterList = node.signature.parameterClause.parameters
-        let dependencies = signatureDependencies(of: node.signature)
+        let dependencies = binding(scopeNames(node.genericParameterClause)) {
+            signatureDependencies(of: node.signature)
+        }
 
         return SwiftFunctionDeclaration(
             name: node.name.text,
@@ -520,7 +562,9 @@ final class DeclarationCollector {
             name: "init",
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: signatureDependencies(of: node.signature),
+            dependencies: binding(scopeNames(node.genericParameterClause)) {
+                signatureDependencies(of: node.signature)
+            },
             filePath: filePath,
             location: location(of: Syntax(node)),
             parameters: parameters(node.signature.parameterClause.parameters),
@@ -547,21 +591,21 @@ final class DeclarationCollector {
         var dependencies: [SwiftDependency] = []
         let parameterList = node.parameterClause.parameters
 
-        for parameter in parameterList {
-            let typeSyntax = Syntax(parameter.type)
-            dependencies.append(contentsOf: dependenciesFor(
-                typeSyntax.trimmedDescription,
+        binding(scopeNames(node.genericParameterClause)) {
+            for parameter in parameterList {
+                dependencies.append(contentsOf: typeDependencies(
+                    on: parameter.type,
+                    kind: .typeUsage,
+                    at: location(of: Syntax(parameter.type))
+                ))
+            }
+
+            dependencies.append(contentsOf: typeDependencies(
+                on: node.returnClause.type,
                 kind: .typeUsage,
-                at: location(of: typeSyntax)
+                at: location(of: Syntax(node.returnClause))
             ))
         }
-
-        let returnSyntax = Syntax(node.returnClause)
-        dependencies.append(contentsOf: dependenciesFor(
-            node.returnClause.type.trimmedDescription,
-            kind: .typeUsage,
-            at: location(of: returnSyntax)
-        ))
 
         return SwiftSubscriptDeclaration(
             modifiers: modifiers(node.modifiers),
@@ -582,12 +626,11 @@ final class DeclarationCollector {
 
         var defaultType: String?
         if let initializer = node.initializer {
-            let typeSyntax = Syntax(initializer.value)
-            defaultType = typeSyntax.trimmedDescription
-            dependencies.append(contentsOf: dependenciesFor(
-                typeSyntax.trimmedDescription,
+            defaultType = initializer.value.trimmedDescription
+            dependencies.append(contentsOf: typeDependencies(
+                on: initializer.value,
                 kind: .typeUsage,
-                at: location(of: typeSyntax)
+                at: location(of: Syntax(initializer.value))
             ))
         }
 
@@ -605,13 +648,17 @@ final class DeclarationCollector {
     }
 
     private func makeTypealias(_ node: TypeAliasDeclSyntax, parent: String?) -> SwiftTypealiasDeclaration {
-        let aliasedSyntax = Syntax(node.initializer.value)
-        let aliasedType = aliasedSyntax.trimmedDescription
+        let aliasedType = node.initializer.value.trimmedDescription
         let generics = genericNames(node.genericParameterClause)
 
         // A generic parameter of the alias itself is not an outside dependency.
-        let dependencies = dependenciesFor(aliasedType, kind: .typeUsage, at: location(of: aliasedSyntax))
-            .filter { !generics.contains($0.name) }
+        let dependencies = binding(generics) {
+            typeDependencies(
+                on: node.initializer.value,
+                kind: .typeUsage,
+                at: location(of: Syntax(node.initializer.value))
+            )
+        }
 
         return SwiftTypealiasDeclaration(
             name: qualify(node.name.text, in: parent),
@@ -631,7 +678,9 @@ final class DeclarationCollector {
             name: qualify(node.name.text, in: parent),
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: signatureDependencies(of: node.signature),
+            dependencies: binding(scopeNames(node.genericParameterClause)) {
+                signatureDependencies(of: node.signature)
+            },
             filePath: filePath,
             location: location(of: Syntax(node)),
             parameters: parameters(node.signature.parameterClause.parameters),
@@ -704,23 +753,25 @@ final class DeclarationCollector {
             guard let pattern = binding.pattern.as(IdentifierPatternSyntax.self) else { continue }
 
             var type = "Any"
-            var typeIsDeclared = false
 
             if let typeAnnotation = binding.typeAnnotation {
-                let typeSyntax = Syntax(typeAnnotation.type)
-                type = typeSyntax.trimmedDescription
-                let resolved = dependenciesFor(type, kind: .typeUsage, at: location(of: typeSyntax))
-                dependencies.append(contentsOf: resolved)
-                typeIsDeclared = !resolved.isEmpty
+                type = typeAnnotation.type.trimmedDescription
+                dependencies.append(contentsOf: typeDependencies(
+                    on: typeAnnotation.type,
+                    kind: .typeUsage,
+                    at: location(of: Syntax(typeAnnotation.type))
+                ))
             }
 
             let initialValue = binding.initializer?.value
 
-            if !typeIsDeclared, let initializer = initialValue,
+            // Only guess when nothing was written: an annotation is the author's answer,
+            // even when it resolves to no dependency at all (`let anything: Any`).
+            if binding.typeAnnotation == nil, let initializer = initialValue,
                let inferred = inferTypeName(from: initializer) {
                 type = inferred
-                dependencies.append(contentsOf: dependenciesFor(
-                    inferred,
+                dependencies.append(contentsOf: typeDependencies(
+                    onInferredName: inferred,
                     kind: .typeUsage,
                     at: location(of: Syntax(initializer))
                 ))
@@ -743,27 +794,19 @@ final class DeclarationCollector {
         return properties
     }
 
-    private func appendCases(
-        from node: EnumCaseDeclSyntax,
-        into collected: inout MemberSet,
-        genericParameters: Set<String>
-    ) {
+    private func appendCases(from node: EnumCaseDeclSyntax, into collected: inout MemberSet) {
         for element in node.elements {
             var associatedValues: [String]?
 
             if let parameterClause = element.parameterClause {
                 associatedValues = []
                 for parameter in parameterClause.parameters {
-                    let typeSyntax = parameter.type
-                    let typeName = typeSyntax.trimmedDescription
-                    associatedValues?.append(typeName)
-
-                    let depLocation = location(of: Syntax(typeSyntax))
-                    collected.caseDependencies.append(contentsOf: dependenciesFor(
-                        typeName,
+                    associatedValues?.append(parameter.type.trimmedDescription)
+                    collected.caseDependencies.append(contentsOf: typeDependencies(
+                        on: parameter.type,
                         kind: .typeUsage,
-                        at: depLocation
-                    ).filter { !genericParameters.contains($0.name) })
+                        at: location(of: Syntax(parameter.type))
+                    ))
                 }
             }
 
@@ -792,6 +835,37 @@ final class DeclarationCollector {
         return Set(clause.parameters.map { $0.name.text })
     }
 
+    /// The names a type declaration binds for its own body: its generic parameters plus
+    /// `Self`, which names the declaration being written rather than a type it uses.
+    private func scopeNames(_ clause: GenericParameterClauseSyntax?) -> Set<String> {
+        genericNames(clause).union(["Self"])
+    }
+
+    /// The `associatedtype` names declared anywhere in a protocol body, including inside
+    /// conditional-compilation blocks. Collected up front because a requirement may use
+    /// an associated type declared below it.
+    private func associatedTypeNames(in memberBlock: MemberBlockSyntax) -> Set<String> {
+        var names: Set<String> = []
+
+        func scan(_ items: MemberBlockItemListSyntax) {
+            for item in items {
+                switch item.decl.as(DeclSyntaxEnum.self) {
+                case .associatedTypeDecl(let node):
+                    names.insert(node.name.text)
+                case .ifConfigDecl(let node):
+                    for clause in node.clauses {
+                        if case .decls(let nested) = clause.elements { scan(nested) }
+                    }
+                default:
+                    break
+                }
+            }
+        }
+
+        scan(memberBlock.members)
+        return names
+    }
+
     /// Records every inherited type as a conformance and returns the names as written.
     private func conformances(
         _ clause: InheritanceClauseSyntax?,
@@ -799,42 +873,82 @@ final class DeclarationCollector {
     ) -> [String] {
         guard let clause else { return [] }
         return clause.inheritedTypes.map { inheritance in
-            let typeSyntax = Syntax(inheritance.type)
-            let typeName = typeSyntax.trimmedDescription
-            dependencies.append(contentsOf: dependenciesFor(
-                typeName,
+            dependencies.append(contentsOf: typeDependencies(
+                on: inheritance.type,
                 kind: .conformance,
-                at: location(of: typeSyntax)
+                at: location(of: Syntax(inheritance.type))
             ))
-            return typeName
+            return inheritance.type.trimmedDescription
         }
     }
 
-    private func dependenciesFor(
-        _ typeName: String?,
+    /// The dependencies a written type expresses, in the order they were written.
+    ///
+    /// Names bound in the current scope are already gone by the time the extractor
+    /// returns; the standard library filter and de-duplication happen here. Two mentions
+    /// of the same type at the same location are one dependency — `(Int, Int)` is not a
+    /// double dependency on `Int`.
+    private func typeDependencies(
+        on type: TypeSyntax?,
         kind: DependencyKind,
         at location: SourceLocation
     ) -> [SwiftDependency] {
-        extractTypeNames(from: typeName).map {
-            SwiftDependency(name: $0, kind: kind, location: location)
+        let extractor = TypeReferenceExtractor(
+            boundNames: boundNames,
+            diagnostics: diagnostics,
+            location: location
+        )
+        return deduplicated(extractor.references(in: type), kind: kind, at: location)
+    }
+
+    /// Same, for a name recovered from an expression rather than a written type — there
+    /// is no `TypeSyntax` to walk when the type comes from `let client = HTTPClient()`.
+    private func typeDependencies(
+        onInferredName name: String,
+        kind: DependencyKind,
+        at location: SourceLocation
+    ) -> [SwiftDependency] {
+        let reference = TypeReference(baseName: name, qualifiedName: name)
+        guard !boundNames.contains(reference.rootName) else { return [] }
+        return deduplicated([reference], kind: kind, at: location)
+    }
+
+    private func deduplicated(
+        _ references: [TypeReference],
+        kind: DependencyKind,
+        at location: SourceLocation
+    ) -> [SwiftDependency] {
+        var seen: Set<String> = []
+        var dependencies: [SwiftDependency] = []
+
+        for reference in references {
+            if ignoresStandardLibraryTypes, reference.isStandardLibraryType { continue }
+            guard seen.insert(reference.qualifiedName).inserted else { continue }
+            dependencies.append(SwiftDependency(
+                name: reference.qualifiedName,
+                kind: kind,
+                location: location,
+                reference: reference
+            ))
         }
+
+        return dependencies
     }
 
     private func signatureDependencies(of signature: FunctionSignatureSyntax) -> [SwiftDependency] {
         var dependencies: [SwiftDependency] = []
 
         for parameter in signature.parameterClause.parameters {
-            let typeSyntax = Syntax(parameter.type)
-            dependencies.append(contentsOf: dependenciesFor(
-                typeSyntax.trimmedDescription,
+            dependencies.append(contentsOf: typeDependencies(
+                on: parameter.type,
                 kind: .typeUsage,
-                at: location(of: typeSyntax)
+                at: location(of: Syntax(parameter.type))
             ))
         }
 
         if let returnClause = signature.returnClause {
-            dependencies.append(contentsOf: dependenciesFor(
-                returnClause.type.trimmedDescription,
+            dependencies.append(contentsOf: typeDependencies(
+                on: returnClause.type,
                 kind: .typeUsage,
                 at: location(of: Syntax(returnClause))
             ))
@@ -926,25 +1040,6 @@ final class DeclarationCollector {
         }
 
         return annotations
-    }
-
-    /// Splits a written type into the capitalized identifiers it mentions.
-    ///
-    /// Deliberately syntactic: the parser has no type checker, so `[String: UserProfile]`
-    /// yields `String` and `UserProfile` and nothing resolves them to modules.
-    func extractTypeNames(from typeString: String?) -> Set<String> {
-        guard let cleaned = typeString?.trimmingCharacters(in: .whitespacesAndNewlines) else { return [] }
-
-        let baseTypes = cleaned
-            .replacingOccurrences(of: "?", with: "")
-            .replacingOccurrences(of: "!", with: "")
-            .replacingOccurrences(of: "[", with: "")
-            .replacingOccurrences(of: "]", with: "")
-            .replacingOccurrences(of: ":", with: "")
-            .components(separatedBy: CharacterSet.alphanumerics.inverted)
-            .filter { !$0.isEmpty && $0.first?.isUppercase == true }
-
-        return Set(baseTypes)
     }
 
     /// Best-effort type inference for `let x = Something()`, used when a binding has no

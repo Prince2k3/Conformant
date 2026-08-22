@@ -83,6 +83,9 @@ Individual reactions can be mixed:
 let policy = ScopePolicy(onSyntaxError: .warn, onUnreadableFile: .fail, onEmptyScope: .fail)
 ```
 
+`ScopePolicy` also carries `ignoresStandardLibraryTypes` — see
+[Dependency Analysis](#dependency-analysis).
+
 ### Basic Code Structure Validation
 
 ```swift
@@ -393,7 +396,7 @@ scope.structs().withParent("Outer")  // ["Outer.Inner"]
 
 | Method | Description |
 |--------|-------------|
-| `dependingOn(type:)` | Depends on specific type |
+| `dependingOn(type:)` | Depends on specific type — a qualified dependency also matches its trailing name, so `URL` finds `Foundation.URL` |
 | `dependingOnModule(_:)` | Depends on specific module |
 | `havingDependencies()` | Has any dependencies |
 
@@ -542,7 +545,7 @@ let hasUIKit = scope.hasImport(of: "UIKit")
 
 ## Dependency Analysis
 
-Analyze type dependencies in your codebase:
+Every declaration records the types it names:
 
 ```swift
 // Get all dependencies of a declaration
@@ -551,6 +554,67 @@ let dependencies = classDeclaration.dependencies
 // Filter by dependency type
 let inheritanceDeps = dependencies.inheritances()
 let importDeps = dependencies.imports()
+```
+
+Dependencies come from walking the parsed type syntax, not from splitting the written
+text, so what a declaration depends on is what it actually wrote:
+
+| Written | Dependencies |
+|---|---|
+| `Foundation.URL` | `Foundation.URL` — one name, not `Foundation` + `URL` |
+| `[UserProfile]` | `UserProfile` — the sugar is not an `Array` dependency |
+| `[String: UserProfile]` | `String`, `UserProfile` |
+| `(Request) -> Response` | `Request`, `Response` |
+| `any Sendable` | `Sendable` |
+| `Any` | none — `Any` is the empty constraint, not a type |
+
+Generic parameters, `associatedtype` names, and `Self` are placeholders rather than
+types, so they are never reported:
+
+```swift
+struct Box<Element> {
+    var first: Element?          // no dependency — Element is Box's own parameter
+    var label: String            // depends on String
+}
+```
+
+A qualified dependency answers to any suffix of its name that starts at a component
+boundary, so a rule can name the type however it is written at the use site:
+
+```swift
+scope.structs().dependingOn(type: "Foundation.URL")  // matches
+scope.structs().dependingOn(type: "URL")             // also matches
+scope.structs().dependingOn(type: "Foundation")      // does not — nothing named it alone
+```
+
+### Type references
+
+Each dependency carries a `TypeReference` describing how the type was written:
+
+```swift
+let reference = dependency.reference          // TypeReference?
+reference?.baseName                           // "URL"
+reference?.qualifiedName                      // "Foundation.URL"
+reference?.moduleQualifier                    // "Foundation" — leftmost component
+reference?.genericArguments                   // nested references, e.g. Result<Data, Error>
+reference?.form                               // .plain, .optional, .array, .dictionary,
+                                              // .function, .tuple, .existential, .opaque,
+                                              // .metatype, .pack, .composition, .suppressed
+reference?.isStandardLibraryType              // true for Int, String, Hashable, …
+```
+
+### Filtering out the standard library
+
+`ScopePolicy.ignoresStandardLibraryTypes` drops references to standard library types from
+every declaration's dependency list. It is **off by default**: removing dependencies can
+only make a rule easier to satisfy, and with it on a type whose only dependency is
+`String` would pass `dependsOnNothing()`. Turn it on when a rule is about your own
+modules and the noise is genuinely in the way:
+
+```swift
+var policy = ScopePolicy.strict
+policy.ignoresStandardLibraryTypes = true
+let scope = try Conformant.scope(directory: "Sources", policy: policy)
 ```
 
 ## Architecture Progress Reports

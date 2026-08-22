@@ -20,26 +20,26 @@ fixture: Actors.swift
     protocols: []
     modifiers: [public]
     annotations: []
-    dependencies: [AccountID/typeUsage@14:40, Decimal/typeUsage@2:26, Decimal/typeUsage@9:35, Receipt/typeUsage@9:57, TransactionLedger/typeUsage@3:25, TransactionLedger/typeUsage@5:25]
+    dependencies: [AccountID/typeUsage/plain@14:40, Decimal/typeUsage/plain@2:26, Decimal/typeUsage/plain@9:35, Receipt/typeUsage/plain@9:57, TransactionLedger/typeUsage/plain@3:25, TransactionLedger/typeUsage/plain@5:25]
     properties:
       - balance: Decimal @2:17
           computed: false
           initialValue: 0
           modifiers: [private]
           annotations: []
-          dependencies: [Decimal/typeUsage@2:26]
+          dependencies: [Decimal/typeUsage/plain@2:26]
       - ledger: TransactionLedger @3:17
           computed: false
           initialValue: <none>
           modifiers: [private]
           annotations: []
-          dependencies: [TransactionLedger/typeUsage@3:25]
+          dependencies: [TransactionLedger/typeUsage/plain@3:25]
       - identifier: AccountID @14:28
           computed: true
           initialValue: <none>
           modifiers: [nonisolated, public]
           annotations: []
-          dependencies: [AccountID/typeUsage@14:40]
+          dependencies: [AccountID/typeUsage/plain@14:40]
     methods:
       - init @5:5
           parameters: [ledger: TransactionLedger]
@@ -48,7 +48,7 @@ fixture: Actors.swift
           hasBody: true
           modifiers: [public]
           annotations: []
-          dependencies: [TransactionLedger/typeUsage@5:25]
+          dependencies: [TransactionLedger/typeUsage/plain@5:25]
       - deposit @9:5
           parameters: [amount: Decimal]
           returns: Receipt
@@ -56,19 +56,19 @@ fixture: Actors.swift
           hasBody: true
           modifiers: [public]
           annotations: []
-          dependencies: [Decimal/typeUsage@9:35, Receipt/typeUsage@9:57]
+          dependencies: [Decimal/typeUsage/plain@9:35, Receipt/typeUsage/plain@9:57]
 - BackgroundActor @17:1
     protocols: []
     modifiers: []
     annotations: [@globalActor]
-    dependencies: [BackgroundActor/typeUsage@19:25]
+    dependencies: [BackgroundActor/typeUsage/plain@19:25]
     properties:
       - shared: BackgroundActor @19:16
           computed: false
           initialValue: BackgroundActor()
           modifiers: [static]
           annotations: []
-          dependencies: [BackgroundActor/typeUsage@19:25]
+          dependencies: [BackgroundActor/typeUsage/plain@19:25]
     methods:
       <none>
 

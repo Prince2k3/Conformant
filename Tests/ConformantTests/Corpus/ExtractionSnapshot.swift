@@ -312,7 +312,10 @@ enum ExtractionSnapshot {
     /// Dependency locations are rendered as line:column only — the absolute file path
     /// varies per machine and would make snapshots unshareable.
     private static func renderDependency(_ dependency: SwiftDependency) -> String {
-        "\(dependency.name)/\(dependency.kind)@\(dependency.location.line):\(dependency.location.column)"
+        // The written form is part of the extraction, so it is part of the record: a
+        // change from `.plain` to `.optional` is a change in what the parser saw.
+        let form = dependency.reference.map { "/\($0.form)" } ?? ""
+        return "\(dependency.name)/\(dependency.kind)\(form)@\(dependency.location.line):\(dependency.location.column)"
     }
 
     private static func list(_ values: [String]) -> String {

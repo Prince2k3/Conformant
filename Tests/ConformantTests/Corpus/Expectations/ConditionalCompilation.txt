@@ -22,7 +22,7 @@ fixture: ConditionalCompilation.swift
     protocols: []
     modifiers: [public]
     annotations: []
-    dependencies: [UIView/inheritance@3:28]
+    dependencies: [UIView/inheritance/plain@3:28]
     properties:
       <none>
     methods:
@@ -32,7 +32,7 @@ fixture: ConditionalCompilation.swift
     protocols: []
     modifiers: [public]
     annotations: []
-    dependencies: [NSView/inheritance@6:28]
+    dependencies: [NSView/inheritance/plain@6:28]
     properties:
       <none>
     methods:
@@ -83,7 +83,7 @@ fixture: ConditionalCompilation.swift
     hasBody: true
     modifiers: []
     annotations: []
-    dependencies: [DebugTool/typeUsage@12:18]
+    dependencies: [DebugTool/typeUsage/plain@12:18]
 
 ## top-level properties (0)
   <none>

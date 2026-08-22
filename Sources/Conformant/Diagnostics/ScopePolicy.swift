@@ -53,14 +53,26 @@ public struct ScopePolicy: Sendable {
     /// The scope resolved to zero Swift files.
     public var onEmptyScope: Reaction
 
+    /// Drop references to standard library types (`Int`, `String`, `Hashable`, …) from
+    /// every declaration's dependency list.
+    ///
+    /// Off by default, and deliberately so. Removing dependencies can only make a rule
+    /// easier to satisfy: with this on, a type whose only dependency is `String` passes
+    /// `dependsOnNothing()`. Turn it on when you are reading dependency lists and the
+    /// standard library is drowning out the types you care about; leave it off when the
+    /// lists feed architecture rules.
+    public var ignoresStandardLibraryTypes: Bool
+
     public init(
         onSyntaxError: Reaction = .fail,
         onUnreadableFile: Reaction = .fail,
-        onEmptyScope: Reaction = .fail
+        onEmptyScope: Reaction = .fail,
+        ignoresStandardLibraryTypes: Bool = false
     ) {
         self.onSyntaxError = onSyntaxError
         self.onUnreadableFile = onUnreadableFile
         self.onEmptyScope = onEmptyScope
+        self.ignoresStandardLibraryTypes = ignoresStandardLibraryTypes
     }
 
     /// Any problem fails the scope. The default, and the right choice inside a test suite.

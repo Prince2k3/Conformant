@@ -30,7 +30,7 @@ import Foundation
 extension Collection where Element == SwiftDependency {
     public func containsDependency(name: String, kind: DependencyKind? = nil) -> Bool {
         return self.contains { dependency in
-            let nameMatch = dependency.name == name
+            let nameMatch = dependency.matches(name)
             let kindMatch = (kind == nil) || (dependency.kind == kind)
             return nameMatch && kindMatch
         }
@@ -208,7 +208,7 @@ extension Collection where Element: SwiftDeclaration {
     /// Filter declarations that depend on a specific type
     public func dependingOn(type: String) -> [Element] {
         return self.filter { declaration in
-            declaration.dependencies.contains { $0.name == type }
+            declaration.dependencies.contains { $0.matches(type) }
         }
     }
 

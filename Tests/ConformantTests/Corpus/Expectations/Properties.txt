@@ -17,7 +17,7 @@ fixture: Properties.swift
     protocols: []
     modifiers: []
     annotations: []
-    dependencies: [ExpensiveResource/typeUsage@12:25, Int/typeUsage@11:17, Int/typeUsage@11:17, Int/typeUsage@16:19, Int/typeUsage@17:24, Item/typeUsage@8:27, Owner/typeUsage@14:24, SomeDelegate/typeUsage@13:24, String/typeUsage@11:30]
+    dependencies: [ExpensiveResource/typeUsage/plain@12:25, Int/typeUsage/plain@11:17, Int/typeUsage/plain@11:17, Int/typeUsage/plain@16:19, Int/typeUsage/plain@17:24, Item/typeUsage/array@8:27, Owner/typeUsage/plain@14:24, SomeDelegate/typeUsage/optional@13:24, String/typeUsage/plain@11:30]
     properties:
       - locale: Any @7:40
           computed: false
@@ -30,7 +30,7 @@ fixture: Properties.swift
           initialValue: []
           modifiers: []
           annotations: [@Published]
-          dependencies: [Item/typeUsage@8:27]
+          dependencies: [Item/typeUsage/array@8:27]
       - isPresented: Any @9:24
           computed: false
           initialValue: false
@@ -42,43 +42,43 @@ fixture: Properties.swift
           initialValue: <none>
           modifiers: []
           annotations: []
-          dependencies: [Int/typeUsage@11:17]
+          dependencies: [Int/typeUsage/plain@11:17]
       - multiB: String @11:22
           computed: false
           initialValue: <none>
           modifiers: []
           annotations: []
-          dependencies: [Int/typeUsage@11:17, String/typeUsage@11:30]
+          dependencies: [Int/typeUsage/plain@11:17, String/typeUsage/plain@11:30]
       - expensive: ExpensiveResource @12:14
           computed: false
           initialValue: ExpensiveResource()
           modifiers: [lazy]
           annotations: []
-          dependencies: [ExpensiveResource/typeUsage@12:25]
+          dependencies: [ExpensiveResource/typeUsage/plain@12:25]
       - delegate: SomeDelegate? @13:14
           computed: false
           initialValue: <none>
           modifiers: [weak]
           annotations: []
-          dependencies: [SomeDelegate/typeUsage@13:24]
+          dependencies: [SomeDelegate/typeUsage/optional@13:24]
       - owner: Owner @14:17
           computed: false
           initialValue: <none>
           modifiers: [unowned]
           annotations: []
-          dependencies: [Owner/typeUsage@14:24]
+          dependencies: [Owner/typeUsage/plain@14:24]
       - computed: Int @16:9
           computed: true
           initialValue: <none>
           modifiers: []
           annotations: []
-          dependencies: [Int/typeUsage@16:19]
+          dependencies: [Int/typeUsage/plain@16:19]
       - withAccessors: Int @17:9
           computed: true
           initialValue: <none>
           modifiers: []
           annotations: []
-          dependencies: [Int/typeUsage@17:24]
+          dependencies: [Int/typeUsage/plain@17:24]
     methods:
       <none>
 
@@ -115,7 +115,7 @@ fixture: Properties.swift
     initialValue: Configuration()
     modifiers: []
     annotations: []
-    dependencies: [Configuration/typeUsage@3:23]
+    dependencies: [Configuration/typeUsage/plain@3:23]
 - topLevelVariable: Any @4:5
     computed: false
     initialValue: 42

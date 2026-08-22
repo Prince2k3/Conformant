@@ -15,26 +15,26 @@ fixture: Classes.swift
     protocols: [Sendable, CustomStringConvertible]
     modifiers: [public, final]
     annotations: []
-    dependencies: [BaseService/inheritance@3:33, CachedUser/typeUsage@5:25, CustomStringConvertible/conformance@3:56, Sendable/conformance@3:46, String/typeUsage@5:25, String/typeUsage@6:29, User/typeUsage@12:46, UserID/typeUsage@12:25, UserRepository/typeUsage@4:29, UserRepository/typeUsage@8:29, UserService/typeUsage@16:39]
+    dependencies: [BaseService/inheritance/plain@3:33, CachedUser/typeUsage/dictionary@5:25, CustomStringConvertible/conformance/plain@3:56, Sendable/conformance/plain@3:46, String/typeUsage/dictionary@5:25, String/typeUsage/plain@6:29, User/typeUsage/plain@12:46, UserID/typeUsage/plain@12:25, UserRepository/typeUsage/plain@4:29, UserRepository/typeUsage/plain@8:29, UserService/typeUsage/plain@16:39]
     properties:
       - repository: UserRepository @4:17
           computed: false
           initialValue: <none>
           modifiers: [private]
           annotations: []
-          dependencies: [UserRepository/typeUsage@4:29]
+          dependencies: [UserRepository/typeUsage/plain@4:29]
       - cache: [String: CachedUser] @5:18
           computed: false
           initialValue: [:]
           modifiers: [internal]
           annotations: []
-          dependencies: [CachedUser/typeUsage@5:25, String/typeUsage@5:25]
+          dependencies: [CachedUser/typeUsage/dictionary@5:25, String/typeUsage/dictionary@5:25]
       - description: String @6:16
           computed: true
           initialValue: <none>
           modifiers: [public]
           annotations: []
-          dependencies: [String/typeUsage@6:29]
+          dependencies: [String/typeUsage/plain@6:29]
     methods:
       - init @8:5
           parameters: [repository: UserRepository]
@@ -43,7 +43,7 @@ fixture: Classes.swift
           hasBody: true
           modifiers: [public]
           annotations: []
-          dependencies: [UserRepository/typeUsage@8:29]
+          dependencies: [UserRepository/typeUsage/plain@8:29]
       - fetch @12:5
           parameters: [id: UserID]
           returns: User
@@ -51,7 +51,7 @@ fixture: Classes.swift
           hasBody: true
           modifiers: [open]
           annotations: []
-          dependencies: [User/typeUsage@12:46, UserID/typeUsage@12:25]
+          dependencies: [User/typeUsage/plain@12:46, UserID/typeUsage/plain@12:25]
       - makeDefault @16:5
           parameters: []
           returns: UserService
@@ -59,7 +59,7 @@ fixture: Classes.swift
           hasBody: true
           modifiers: [private, static]
           annotations: []
-          dependencies: [UserService/typeUsage@16:39]
+          dependencies: [UserService/typeUsage/plain@16:39]
 - Minimal @21:1
     superclass: <none>
     protocols: []

@@ -33,6 +33,28 @@ public struct SwiftDependency: Hashable {
     public let kind: DependencyKind
     /// The location in the source file where this dependency occurs.
     public let location: SourceLocation
+    /// The written type this dependency came from, when there was one: its generic
+    /// arguments, the form it appeared in, and how it was qualified. `nil` for
+    /// dependencies that are not written types, such as `import` and inferred names.
+    public let reference: TypeReference?
+
+    init(name: String, kind: DependencyKind, location: SourceLocation, reference: TypeReference? = nil) {
+        self.name = name
+        self.kind = kind
+        self.location = location
+        self.reference = reference
+    }
+
+    /// Whether `name` names this dependency.
+    ///
+    /// A qualified dependency answers to any suffix of its name that starts at a
+    /// component boundary, so `Foundation.URL` matches both `Foundation.URL` and `URL`.
+    /// Equality is still exact — this is for rules and filters, which are written against
+    /// the type name an author has in mind rather than the one the source happened to use.
+    public func matches(_ name: String) -> Bool {
+        if self.name == name { return true }
+        return self.name.hasSuffix(".\(name)")
+    }
 
     // Implement Hashable for Set operations later if needed
     public static func == (lhs: SwiftDependency, rhs: SwiftDependency) -> Bool {

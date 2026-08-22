@@ -133,7 +133,7 @@ struct ScopeBuilder {
     // MARK: - Parsing
 
     private func parse(_ urls: [URL]) throws -> Result {
-        let parser = SwiftSyntaxParser()
+        let parser = SwiftSyntaxParser(ignoresStandardLibraryTypes: policy.ignoresStandardLibraryTypes)
         var files: [SwiftFile] = []
         var diagnostics: [ParseDiagnostic] = []
 

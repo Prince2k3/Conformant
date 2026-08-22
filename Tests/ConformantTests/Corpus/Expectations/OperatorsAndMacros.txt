@@ -9,14 +9,14 @@ fixture: OperatorsAndMacros.swift
     protocols: []
     modifiers: [final]
     annotations: []
-    dependencies: [Socket/typeUsage@44:25, Socket/typeUsage@46:18]
+    dependencies: [Socket/typeUsage/plain@44:25, Socket/typeUsage/plain@46:18]
     properties:
       - socket: Socket @44:17
           computed: false
           initialValue: <none>
           modifiers: [private]
           annotations: []
-          dependencies: [Socket/typeUsage@44:25]
+          dependencies: [Socket/typeUsage/plain@44:25]
     methods:
       - init @46:5
           parameters: [socket: Socket]
@@ -25,7 +25,7 @@ fixture: OperatorsAndMacros.swift
           hasBody: true
           modifiers: []
           annotations: []
-          dependencies: [Socket/typeUsage@46:18]
+          dependencies: [Socket/typeUsage/plain@46:18]
     deinitializers:
       - deinit @50:5
           hasBody: true
@@ -38,20 +38,20 @@ fixture: OperatorsAndMacros.swift
     protocols: []
     modifiers: [public]
     annotations: []
-    dependencies: [Double/typeUsage@23:26, Double/typeUsage@26:45, Double/typeUsage@31:32, Int/typeUsage@24:18, Int/typeUsage@26:27, Int/typeUsage@26:40, Int/typeUsage@31:27]
+    dependencies: [Double/typeUsage/array@23:26, Double/typeUsage/plain@26:45, Double/typeUsage/plain@31:32, Int/typeUsage/plain@24:18, Int/typeUsage/plain@26:27, Int/typeUsage/plain@26:40, Int/typeUsage/plain@31:27]
     properties:
       - storage: [Double] @23:17
           computed: false
           initialValue: <none>
           modifiers: [private]
           annotations: []
-          dependencies: [Double/typeUsage@23:26]
+          dependencies: [Double/typeUsage/array@23:26]
       - columns: Int @24:9
           computed: false
           initialValue: <none>
           modifiers: []
           annotations: []
-          dependencies: [Int/typeUsage@24:18]
+          dependencies: [Int/typeUsage/plain@24:18]
     methods:
       <none>
     subscripts:
@@ -61,14 +61,14 @@ fixture: OperatorsAndMacros.swift
           accessors: [get, set]
           modifiers: [public]
           annotations: []
-          dependencies: [Double/typeUsage@26:45, Int/typeUsage@26:27, Int/typeUsage@26:40]
+          dependencies: [Double/typeUsage/plain@26:45, Int/typeUsage/plain@26:27, Int/typeUsage/plain@26:40]
       - subscript @31:5
           parameters: [index: Int]
           returns: Double
           accessors: [get]
           modifiers: []
           annotations: []
-          dependencies: [Double/typeUsage@31:32, Int/typeUsage@31:27]
+          dependencies: [Double/typeUsage/plain@31:32, Int/typeUsage/plain@31:27]
 
 ## enums (0)
   <none>
@@ -78,7 +78,7 @@ fixture: OperatorsAndMacros.swift
     inherits: []
     modifiers: [public]
     annotations: []
-    dependencies: [Entity/typeUsage@40:19, Entity/typeUsage@40:30, Error/conformance@38:29, ID/typeUsage@40:19, Identifiable/conformance@37:28, NetworkError/typeUsage@38:37]
+    dependencies: [Error/conformance/plain@38:29, Identifiable/conformance/plain@37:28, NetworkError/typeUsage/plain@38:37]
     properties:
       <none>
     methods:
@@ -90,20 +90,20 @@ fixture: OperatorsAndMacros.swift
           accessors: [get]
           modifiers: []
           annotations: []
-          dependencies: [Entity/typeUsage@40:19, Entity/typeUsage@40:30, ID/typeUsage@40:19]
+          dependencies: []
     associatedTypes:
       - Entity @37:5
           inherits: [Identifiable]
           default: <none>
           modifiers: []
           annotations: []
-          dependencies: [Identifiable/conformance@37:28]
+          dependencies: [Identifiable/conformance/plain@37:28]
       - Failure @38:5
           inherits: [Error]
           default: NetworkError
           modifiers: []
           annotations: []
-          dependencies: [Error/conformance@38:29, NetworkError/typeUsage@38:37]
+          dependencies: [Error/conformance/plain@38:29, NetworkError/typeUsage/plain@38:37]
 
 ## actors (0)
   <none>
@@ -117,7 +117,7 @@ fixture: OperatorsAndMacros.swift
     genericParameters: []
     modifiers: [public]
     annotations: []
-    dependencies: [Request/typeUsage@19:28, Response/typeUsage@19:28]
+    dependencies: [Request/typeUsage/function@19:28, Response/typeUsage/function@19:28]
 - Pair @20:1
     aliases: (Value, Value)
     genericParameters: [Value]
@@ -132,7 +132,7 @@ fixture: OperatorsAndMacros.swift
     definition: #externalMacro(module: "ConformantMacros", type: "StringifyMacro")
     modifiers: [public]
     annotations: [@freestanding(_: expression)]
-    dependencies: [String/typeUsage@13:47, Value/typeUsage@13:40, Value/typeUsage@13:47]
+    dependencies: [String/typeUsage/tuple@13:47]
 - Identified @16:1
     parameters: []
     returns: <none>

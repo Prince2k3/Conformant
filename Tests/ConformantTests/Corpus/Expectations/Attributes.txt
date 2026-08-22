@@ -9,14 +9,14 @@ fixture: Attributes.swift
     protocols: [@unchecked Sendable]
     modifiers: [public, final]
     annotations: [@available(iOS: 17.0, macOS: 14.0), @MainActor]
-    dependencies: [Int/typeUsage@4:33, NSObject/inheritance@3:28, Sendable/conformance@3:38]
+    dependencies: [Int/typeUsage/plain@4:33, NSObject/inheritance/plain@3:28, Sendable/conformance/plain@3:38]
     properties:
       - observed: Int @4:23
           computed: false
           initialValue: 0
           modifiers: [dynamic]
           annotations: [@objc]
-          dependencies: [Int/typeUsage@4:33]
+          dependencies: [Int/typeUsage/plain@4:33]
     methods:
       <none>
 
@@ -25,14 +25,14 @@ fixture: Attributes.swift
     protocols: []
     modifiers: []
     annotations: [@propertyWrapper]
-    dependencies: [Int/typeUsage@9:23]
+    dependencies: [Int/typeUsage/plain@9:23]
     properties:
       - wrappedValue: Int @9:9
           computed: false
           initialValue: <none>
           modifiers: []
           annotations: []
-          dependencies: [Int/typeUsage@9:23]
+          dependencies: [Int/typeUsage/plain@9:23]
     methods:
       <none>
 - App @17:1
@@ -58,7 +58,7 @@ fixture: Attributes.swift
     protocols: []
     modifiers: []
     annotations: [@resultBuilder]
-    dependencies: [Component/typeUsage@14:37, Component/typeUsage@14:51]
+    dependencies: [Component/typeUsage/plain@14:37, Component/typeUsage/plain@14:51]
     cases:
       <none>
     properties:
@@ -71,7 +71,7 @@ fixture: Attributes.swift
           hasBody: true
           modifiers: [static]
           annotations: []
-          dependencies: [Component/typeUsage@14:37, Component/typeUsage@14:51]
+          dependencies: [Component/typeUsage/plain@14:37, Component/typeUsage/plain@14:51]
 
 ## protocols (0)
   <none>

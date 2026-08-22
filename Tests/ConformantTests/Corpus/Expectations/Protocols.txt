@@ -17,20 +17,20 @@ fixture: Protocols.swift
     inherits: [AnyObject, Sendable]
     modifiers: [public]
     annotations: []
-    dependencies: [AnyObject/conformance@1:29, Error/conformance@3:29, Identifier/typeUsage@8:21, Int/typeUsage@5:16, Item/typeUsage@8:46, Item/typeUsage@9:23, Sendable/conformance@1:40, String/typeUsage@6:15]
+    dependencies: [AnyObject/conformance/plain@1:29, Error/conformance/plain@3:29, Identifier/typeUsage/plain@8:21, Int/typeUsage/plain@5:16, Sendable/conformance/plain@1:40, String/typeUsage/plain@6:15]
     properties:
       - count: Int @5:9
           computed: true
           initialValue: <none>
           modifiers: []
           annotations: []
-          dependencies: [Int/typeUsage@5:16]
+          dependencies: [Int/typeUsage/plain@5:16]
       - name: String @6:9
           computed: true
           initialValue: <none>
           modifiers: []
           annotations: []
-          dependencies: [String/typeUsage@6:15]
+          dependencies: [String/typeUsage/plain@6:15]
     methods:
       - load @8:5
           parameters: [id: Identifier]
@@ -39,7 +39,7 @@ fixture: Protocols.swift
           hasBody: false
           modifiers: []
           annotations: []
-          dependencies: [Identifier/typeUsage@8:21, Item/typeUsage@8:46]
+          dependencies: [Identifier/typeUsage/plain@8:21]
       - save @9:5
           parameters: [item: Item]
           returns: <none>
@@ -47,7 +47,7 @@ fixture: Protocols.swift
           hasBody: false
           modifiers: []
           annotations: []
-          dependencies: [Item/typeUsage@9:23]
+          dependencies: []
     associatedTypes:
       - Item @2:5
           inherits: []
@@ -60,7 +60,7 @@ fixture: Protocols.swift
           default: <none>
           modifiers: []
           annotations: []
-          dependencies: [Error/conformance@3:29]
+          dependencies: [Error/conformance/plain@3:29]
 - Marker @12:1
     inherits: []
     modifiers: []

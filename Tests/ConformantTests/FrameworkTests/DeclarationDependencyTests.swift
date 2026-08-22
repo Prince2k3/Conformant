@@ -77,8 +77,11 @@ final class DeclarationDependencyTests: XCTestCase {
 
         XCTAssertTrue(deps.containsDependency(name: "String", kind: .typeUsage), "Should depend on String")
         XCTAssertTrue(deps.containsDependency(name: "TimeInterval", kind: .typeUsage), "Should depend on TimeInterval")
-        XCTAssertTrue(deps.containsDependency(name: "URLRequest", kind: .typeUsage), "Should depend on URLRequest (from CachePolicy)") // Depends on extractTypeNames
-        XCTAssertTrue(deps.containsDependency(name: "CachePolicy", kind: .typeUsage), "Should depend on CachePolicy (from URLRequest.CachePolicy)") // Depends on extractTypeNames
+        // `URLRequest.CachePolicy` is one dependency, and it answers to its own name and
+        // to the trailing part of it — but not to the qualifier on its own.
+        XCTAssertTrue(deps.containsDependency(name: "URLRequest.CachePolicy", kind: .typeUsage))
+        XCTAssertTrue(deps.containsDependency(name: "CachePolicy", kind: .typeUsage))
+        XCTAssertFalse(deps.containsDependency(name: "URLRequest", kind: .typeUsage), "The source never named URLRequest by itself")
         XCTAssertTrue(deps.containsDependency(name: "URLSessionConfiguration", kind: .typeUsage), "Should depend on URLSessionConfiguration")
         XCTAssertTrue(deps.containsDependency(name: "NetworkConfiguration", kind: .typeUsage), "Should depend on NetworkConfiguration (static properties/==)")
     }
@@ -114,7 +117,10 @@ final class DeclarationDependencyTests: XCTestCase {
         }
 
         let configDeps = configurable.dependencies
-        XCTAssertTrue(configDeps.containsDependency(name: "Configuration", kind: .typeUsage), "Should depend on Configuration assoc type name")
+        XCTAssertFalse(
+            configDeps.containsDependency(name: "Configuration", kind: .typeUsage),
+            "Configuration is the protocol's own associated type, not a type it depends on"
+        )
     }
 
     func testExtensionDependencies() throws {
@@ -137,26 +143,122 @@ final class DeclarationDependencyTests: XCTestCase {
         XCTAssertTrue(deps.containsDependency(name: "Data", kind: .typeUsage), "Should depend on Data")
     }
 
-    func testExtractTypeNamesHelper() {
-        let collector = DeclarationCollector(
-            filePath: "dummy",
-            converter: SourceLocationConverter(
-                fileName: "dummy",
-                tree: SourceFileSyntax(statements: [])
-            ),
-            diagnostics: DiagnosticSink()
+    // MARK: - Structured type resolution
+
+    /// The names a written type contributes as dependencies, read back through the
+    /// parser rather than through a string splitter, so the assertions describe what a
+    /// rule would actually see.
+    private func dependencyNames(ofPropertyTyped type: String) -> [String] {
+        let file = SwiftSyntaxParser().parse(
+            source: "struct Probe { var value: \(type) }",
+            path: "Probe.swift"
+        )
+        return file.structs.first?.dependencies.map(\.name) ?? []
+    }
+
+    func testWrittenTypesResolveToTheNamesTheyMention() {
+        XCTAssertEqual(dependencyNames(ofPropertyTyped: "String"), ["String"])
+        XCTAssertEqual(dependencyNames(ofPropertyTyped: "String?"), ["String"])
+        XCTAssertEqual(dependencyNames(ofPropertyTyped: "String!"), ["String"])
+        XCTAssertEqual(dependencyNames(ofPropertyTyped: "[Int]"), ["Int"])
+        XCTAssertEqual(dependencyNames(ofPropertyTyped: "[String: Int]"), ["String", "Int"])
+        XCTAssertEqual(dependencyNames(ofPropertyTyped: "Optional<URLSession>"), ["Optional", "URLSession"])
+        XCTAssertEqual(
+            dependencyNames(ofPropertyTyped: "(Result<MyType, MyError>) -> Void"),
+            ["Result", "MyType", "MyError", "Void"]
+        )
+        XCTAssertEqual(dependencyNames(ofPropertyTyped: "any Equatable"), ["Equatable"])
+        XCTAssertEqual(dependencyNames(ofPropertyTyped: "some View"), ["View"])
+        XCTAssertEqual(dependencyNames(ofPropertyTyped: "Codable & Sendable"), ["Codable", "Sendable"])
+        XCTAssertEqual(dependencyNames(ofPropertyTyped: "Int.Type"), ["Int"])
+        XCTAssertEqual(dependencyNames(ofPropertyTyped: "(Int, Label)"), ["Int", "Label"])
+        XCTAssertEqual(dependencyNames(ofPropertyTyped: "@Sendable (Int) -> Void"), ["Int", "Void"])
+    }
+
+    func testQualifiedNameIsOneDependencyRatherThanTwo() {
+        // The whole point of the structured walker: `MyModule.MyType` is one type, not a
+        // dependency on a module plus a dependency on a name.
+        XCTAssertEqual(dependencyNames(ofPropertyTyped: "MyModule.MyType"), ["MyModule.MyType"])
+        XCTAssertEqual(dependencyNames(ofPropertyTyped: "Swift.Int"), ["Swift.Int"])
+        XCTAssertEqual(dependencyNames(ofPropertyTyped: "A.B.C"), ["A.B.C"])
+        XCTAssertEqual(
+            dependencyNames(ofPropertyTyped: "Swift.Array<MyModule.Element>"),
+            ["Swift.Array", "MyModule.Element"]
+        )
+    }
+
+    func testQualifiedDependencyMatchesAnyTrailingPartOfItsName() {
+        let file = SwiftSyntaxParser().parse(
+            source: "struct Probe { var value: MyModule.Deep.Type1 }",
+            path: "Probe.swift"
+        )
+        let dependencies = try? XCTUnwrap(file.structs.first).dependencies
+
+        XCTAssertTrue(dependencies?.containsDependency(name: "MyModule.Deep.Type1") ?? false)
+        XCTAssertTrue(dependencies?.containsDependency(name: "Deep.Type1") ?? false)
+        XCTAssertTrue(dependencies?.containsDependency(name: "Type1") ?? false)
+        XCTAssertFalse(dependencies?.containsDependency(name: "Deep") ?? true)
+        XCTAssertFalse(dependencies?.containsDependency(name: "Type") ?? true)
+    }
+
+    func testGenericParametersAndAssociatedTypesAreNotDependencies() {
+        let file = SwiftSyntaxParser().parse(
+            source: """
+            struct Box<Element> {
+                var contents: [Element]
+                var label: String
+                func map<Other>(_ transform: (Element) -> Other) -> Box<Other> { fatalError() }
+            }
+
+            protocol Repository {
+                associatedtype Entity: Identifiable
+                subscript(id: Entity.ID) -> Entity? { get }
+                func store(_ entity: Entity) throws
+            }
+            """,
+            path: "Generics.swift"
         )
 
-        XCTAssertEqual(collector.extractTypeNames(from: "String"), ["String"])
-        XCTAssertEqual(collector.extractTypeNames(from: "String?"), ["String"])
-        XCTAssertEqual(collector.extractTypeNames(from: "[Int]"), ["Int"])
-        XCTAssertEqual(collector.extractTypeNames(from: "[String: Int]"), ["String", "Int"])
-        XCTAssertEqual(collector.extractTypeNames(from: "Optional<URLSession>"), ["Optional", "URLSession"])
-        XCTAssertEqual(collector.extractTypeNames(from: "(Result<MyType, MyError>) -> Void"), ["Result", "MyType", "MyError", "Void"]) // Current basic logic
-        XCTAssertEqual(collector.extractTypeNames(from: "MyModule.MyType"), ["MyModule", "MyType"])
-        // Assuming 'any'/'some' are added later or handled
-        XCTAssertEqual(collector.extractTypeNames(from: "any Equatable"), ["Equatable"])
-        XCTAssertEqual(collector.extractTypeNames(from: "T"), ["T"])
+        let box = file.structs.first { $0.name == "Box" }
+        // `Element` and `Other` are placeholders; `Box` is a real self-reference.
+        XCTAssertEqual(box?.dependencies.map(\.name), ["String", "Box"])
+
+        let repository = file.protocols.first { $0.name == "Repository" }
+        // `Entity` and `Entity.ID` are placeholders; only the real constraint remains.
+        XCTAssertEqual(repository?.dependencies.map(\.name), ["Identifiable"])
+    }
+
+    func testSelfIsNotADependency() {
+        let file = SwiftSyntaxParser().parse(
+            source: "struct Point { static func zero() -> Self { fatalError() } }",
+            path: "Point.swift"
+        )
+        XCTAssertEqual(file.structs.first?.dependencies.map(\.name), [])
+    }
+
+    func testReferenceRecordsHowTheTypeWasWritten() {
+        let file = SwiftSyntaxParser().parse(
+            source: "struct Probe { var value: [Foundation.URL]? }",
+            path: "Probe.swift"
+        )
+        let reference = file.structs.first?.dependencies.first?.reference
+
+        XCTAssertEqual(reference?.baseName, "URL")
+        XCTAssertEqual(reference?.qualifiedName, "Foundation.URL")
+        XCTAssertEqual(reference?.moduleQualifier, "Foundation")
+        // The array is the innermost sugar around the name, so that is the form recorded.
+        XCTAssertEqual(reference?.form, .array)
+    }
+
+    func testStandardLibraryFilterIsOffByDefault() {
+        let source = "struct Probe { var value: [String: Int] }"
+
+        let unfiltered = SwiftSyntaxParser().parse(source: source, path: "Probe.swift")
+        XCTAssertEqual(unfiltered.structs.first?.dependencies.map(\.name), ["String", "Int"])
+
+        let filtered = SwiftSyntaxParser(ignoresStandardLibraryTypes: true)
+            .parse(source: source, path: "Probe.swift")
+        XCTAssertEqual(filtered.structs.first?.dependencies.map(\.name), [])
     }
 
     func testComplexTypeDependencies() throws {
@@ -174,8 +276,12 @@ final class DeclarationDependencyTests: XCTestCase {
         // Test dependencies extracted by the basic helper
         XCTAssertTrue(complexStruct.dependencies.containsDependency(name: "String", kind: .typeUsage))
         XCTAssertTrue(complexStruct.dependencies.containsDependency(name: "Int", kind: .typeUsage))
-        XCTAssertTrue(complexStruct.dependencies.containsDependency(name: "URL", kind: .typeUsage)) // From Foundation.URL
-        XCTAssertTrue(complexStruct.dependencies.containsDependency(name: "Foundation", kind: .typeUsage)) // From Foundation.URL
+        XCTAssertTrue(complexStruct.dependencies.containsDependency(name: "Foundation.URL", kind: .typeUsage))
+        XCTAssertTrue(complexStruct.dependencies.containsDependency(name: "URL", kind: .typeUsage))
+        XCTAssertFalse(
+            complexStruct.dependencies.containsDependency(name: "Foundation", kind: .typeUsage),
+            "Foundation.URL is one type, not a dependency on a module plus a dependency on a name"
+        )
         XCTAssertTrue(complexStruct.dependencies.containsDependency(name: "Result", kind: .typeUsage))
         XCTAssertTrue(complexStruct.dependencies.containsDependency(name: "MyType", kind: .typeUsage)) // User-defined type
         XCTAssertTrue(complexStruct.dependencies.containsDependency(name: "Error", kind: .typeUsage))
