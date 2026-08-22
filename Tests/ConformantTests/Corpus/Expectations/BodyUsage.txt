@@ -9,7 +9,7 @@ fixture: BodyUsage.swift
     protocols: []
     modifiers: [final]
     annotations: []
-    dependencies: []
+    dependencies: [AnalyticsEvent/typeUsage/function@10:22, DatabaseClient/staticAccess/plain@4:9, Logger/instantiation/plain@5:13, ParsedValue/typeUsage/plain@7:50, Parser/staticAccess/plain@7:28, Tracker/staticAccess/plain@11:13, UserRepository/instantiation/plain@3:26, Void/typeUsage/function@10:22]
     properties:
       <none>
     methods:
@@ -20,7 +20,7 @@ fixture: BodyUsage.swift
           hasBody: true
           modifiers: []
           annotations: []
-          dependencies: []
+          dependencies: [AnalyticsEvent/typeUsage/function@10:22, DatabaseClient/staticAccess/plain@4:9, Logger/instantiation/plain@5:13, ParsedValue/typeUsage/plain@7:50, Parser/staticAccess/plain@7:28, Tracker/staticAccess/plain@11:13, UserRepository/instantiation/plain@3:26, Void/typeUsage/function@10:22]
 
 ## structs (0)
   <none>

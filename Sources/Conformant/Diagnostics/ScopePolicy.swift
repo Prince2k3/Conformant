@@ -53,6 +53,25 @@ public struct ScopePolicy: Sendable {
     /// The scope resolved to zero Swift files.
     public var onEmptyScope: Reaction
 
+    /// How much of a declaration counts as a dependency.
+    public enum DependencyDepth: String, Sendable {
+        /// Only what a declaration writes down in its signature: inheritance,
+        /// conformances, parameter and return types, property annotations.
+        case signatures
+        /// Also what its bodies reach for — types they construct, static members they
+        /// touch, and types they name in annotations, casts, and generic arguments.
+        case signaturesAndBodies
+    }
+
+    /// Whether bodies are read for dependencies. Defaults to `.signaturesAndBodies`.
+    ///
+    /// Bodies are strictly more information, so turning this off can only make a rule
+    /// easier to satisfy: with `.signatures`, a type that constructs a `UserRepository`
+    /// in every method still passes `dependsOnNothing()`. The switch exists because
+    /// reading bodies surfaces coupling that existing suites were passing over, not
+    /// because hiding it is the safer default.
+    public var dependencyDepth: DependencyDepth
+
     /// Drop references to standard library types (`Int`, `String`, `Hashable`, …) from
     /// every declaration's dependency list.
     ///
@@ -67,11 +86,13 @@ public struct ScopePolicy: Sendable {
         onSyntaxError: Reaction = .fail,
         onUnreadableFile: Reaction = .fail,
         onEmptyScope: Reaction = .fail,
+        dependencyDepth: DependencyDepth = .signaturesAndBodies,
         ignoresStandardLibraryTypes: Bool = false
     ) {
         self.onSyntaxError = onSyntaxError
         self.onUnreadableFile = onUnreadableFile
         self.onEmptyScope = onEmptyScope
+        self.dependencyDepth = dependencyDepth
         self.ignoresStandardLibraryTypes = ignoresStandardLibraryTypes
     }
 

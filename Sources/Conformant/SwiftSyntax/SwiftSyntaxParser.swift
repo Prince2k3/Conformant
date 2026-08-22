@@ -32,11 +32,18 @@ import SwiftParserDiagnostics
 /// Parser that uses SwiftSyntax to extract declarations from Swift files
 public class SwiftSyntaxParser {
 
+    /// See `ScopePolicy.dependencyDepth`.
+    private let dependencyDepth: ScopePolicy.DependencyDepth
+
     /// See `ScopePolicy.ignoresStandardLibraryTypes`. Off by default: dropping
     /// dependencies can only make an architecture rule easier to satisfy.
     private let ignoresStandardLibraryTypes: Bool
 
-    public init(ignoresStandardLibraryTypes: Bool = false) {
+    public init(
+        dependencyDepth: ScopePolicy.DependencyDepth = .signaturesAndBodies,
+        ignoresStandardLibraryTypes: Bool = false
+    ) {
+        self.dependencyDepth = dependencyDepth
         self.ignoresStandardLibraryTypes = ignoresStandardLibraryTypes
     }
 
@@ -70,6 +77,7 @@ public class SwiftSyntaxParser {
             filePath: canonicalPath,
             converter: converter,
             diagnostics: sink,
+            dependencyDepth: dependencyDepth,
             ignoresStandardLibraryTypes: ignoresStandardLibraryTypes
         )
         collector.collect(from: sourceFile)

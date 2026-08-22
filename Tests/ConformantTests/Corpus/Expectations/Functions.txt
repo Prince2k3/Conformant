@@ -76,7 +76,7 @@ fixture: Functions.swift
     hasBody: true
     modifiers: []
     annotations: [@discardableResult, @inlinable]
-    dependencies: []
+    dependencies: [Sendable/genericConstraint/plain@13:19]
 
 ## top-level properties (0)
   <none>

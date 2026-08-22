@@ -29,7 +29,36 @@ import Foundation
 public enum DependencyKind: Hashable {
     case inheritance
     case conformance
+    /// A type written down: a parameter, a return type, a property annotation, an alias.
     case typeUsage
+    /// A type constructed in a body — `UserRepository()`.
+    case instantiation
+    /// A static or class member reached in a body — `DatabaseClient.shared`.
+    case staticAccess
+    /// A bound on a generic parameter — the `Codable` in `func send<T: Codable>(_ value: T)`.
+    case genericConstraint
     case `extension`
     case `import`
+}
+
+extension DependencyKind {
+    /// Whether this kind couples the declaration to a named type, and so is subject to
+    /// layer rules.
+    ///
+    /// `.import` is excluded because module rules match imports by module name, on their
+    /// own path. `.extension` is excluded because the extended type is the declaration's
+    /// own subject rather than something it reaches out to.
+    ///
+    /// The switch is exhaustive on purpose. A rule that quietly skipped a real dependency
+    /// would pass while the coupling it was written to catch went unreported, so a new
+    /// kind has to be classified here before it compiles.
+    public var couplesToType: Bool {
+        switch self {
+        case .import, .extension:
+            return false
+        case .inheritance, .conformance, .typeUsage,
+             .instantiation, .staticAccess, .genericConstraint:
+            return true
+        }
+    }
 }

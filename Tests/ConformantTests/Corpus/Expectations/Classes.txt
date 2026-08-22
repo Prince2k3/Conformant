@@ -15,7 +15,7 @@ fixture: Classes.swift
     protocols: [Sendable, CustomStringConvertible]
     modifiers: [public, final]
     annotations: []
-    dependencies: [BaseService/inheritance/plain@3:33, CachedUser/typeUsage/dictionary@5:25, CustomStringConvertible/conformance/plain@3:56, Sendable/conformance/plain@3:46, String/typeUsage/dictionary@5:25, String/typeUsage/plain@6:29, User/typeUsage/plain@12:46, UserID/typeUsage/plain@12:25, UserRepository/typeUsage/plain@4:29, UserRepository/typeUsage/plain@8:29, UserService/typeUsage/plain@16:39]
+    dependencies: [BaseService/inheritance/plain@3:33, CachedUser/typeUsage/dictionary@5:25, CustomStringConvertible/conformance/plain@3:56, InMemoryUserRepository/instantiation/plain@17:33, Sendable/conformance/plain@3:46, String/typeUsage/dictionary@5:25, String/typeUsage/plain@6:29, User/typeUsage/plain@12:46, UserID/typeUsage/plain@12:25, UserRepository/typeUsage/plain@4:29, UserRepository/typeUsage/plain@8:29, UserService/instantiation/plain@17:9, UserService/typeUsage/plain@16:39]
     properties:
       - repository: UserRepository @4:17
           computed: false
@@ -59,7 +59,7 @@ fixture: Classes.swift
           hasBody: true
           modifiers: [private, static]
           annotations: []
-          dependencies: [UserService/typeUsage/plain@16:39]
+          dependencies: [InMemoryUserRepository/instantiation/plain@17:33, UserService/instantiation/plain@17:9, UserService/typeUsage/plain@16:39]
 - Minimal @21:1
     superclass: <none>
     protocols: []

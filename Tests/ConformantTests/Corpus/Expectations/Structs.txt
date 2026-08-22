@@ -11,7 +11,7 @@ fixture: Structs.swift
     protocols: [Codable, Hashable]
     modifiers: [public]
     annotations: []
-    dependencies: [Codable/conformance/plain@1:22, CurrencyCode/typeUsage/plain@3:26, CurrencyCode/typeUsage/plain@6:38, Decimal/typeUsage/plain@2:24, ExchangeRate/typeUsage/plain@6:64, Hashable/conformance/plain@1:31, Money/typeUsage/plain@6:78, String/typeUsage/plain@4:27]
+    dependencies: [Codable/conformance/plain@1:22, CurrencyCode/typeUsage/plain@3:26, CurrencyCode/typeUsage/plain@6:38, Decimal/typeUsage/plain@2:24, ExchangeRate/typeUsage/plain@6:64, Hashable/conformance/plain@1:31, Money/instantiation/plain@7:9, Money/typeUsage/plain@6:78, String/typeUsage/plain@4:27]
     properties:
       - amount: Decimal @2:16
           computed: false
@@ -39,7 +39,7 @@ fixture: Structs.swift
           hasBody: true
           modifiers: [public]
           annotations: []
-          dependencies: [CurrencyCode/typeUsage/plain@6:38, ExchangeRate/typeUsage/plain@6:64, Money/typeUsage/plain@6:78]
+          dependencies: [CurrencyCode/typeUsage/plain@6:38, ExchangeRate/typeUsage/plain@6:64, Money/instantiation/plain@7:9, Money/typeUsage/plain@6:78]
 - Empty @11:1
     protocols: []
     modifiers: []

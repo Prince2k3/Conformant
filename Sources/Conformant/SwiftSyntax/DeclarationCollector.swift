@@ -53,6 +53,9 @@ final class DeclarationCollector {
     private let converter: SourceLocationConverter
     let diagnostics: DiagnosticSink
 
+    /// See `ScopePolicy.dependencyDepth`.
+    private let dependencyDepth: ScopePolicy.DependencyDepth
+
     /// See `ScopePolicy.ignoresStandardLibraryTypes`.
     private let ignoresStandardLibraryTypes: Bool
 
@@ -79,11 +82,13 @@ final class DeclarationCollector {
         filePath: String,
         converter: SourceLocationConverter,
         diagnostics: DiagnosticSink,
+        dependencyDepth: ScopePolicy.DependencyDepth = .signaturesAndBodies,
         ignoresStandardLibraryTypes: Bool = false
     ) {
         self.filePath = filePath
         self.converter = converter
         self.diagnostics = diagnostics
+        self.dependencyDepth = dependencyDepth
         self.ignoresStandardLibraryTypes = ignoresStandardLibraryTypes
     }
 
@@ -222,6 +227,7 @@ final class DeclarationCollector {
             all.append(contentsOf: properties.flatMap(\.dependencies))
             all.append(contentsOf: methods.flatMap(\.dependencies))
             all.append(contentsOf: subscripts.flatMap(\.dependencies))
+            all.append(contentsOf: deinitializers.flatMap(\.dependencies))
             all.append(contentsOf: associatedTypes.flatMap(\.dependencies))
             all.append(contentsOf: caseDependencies)
             return all
@@ -302,6 +308,9 @@ final class DeclarationCollector {
                     }
                 }
             }
+            dependencies.append(contentsOf: genericConstraints(
+                node.genericParameterClause, node.genericWhereClause
+            ))
             return memberSet(of: node.memberBlock, owner: name)
         }
         dependencies.append(contentsOf: members.dependencies)
@@ -330,6 +339,9 @@ final class DeclarationCollector {
 
         let members: MemberSet = binding(scopeNames(node.genericParameterClause)) {
             protocolNames = conformances(node.inheritanceClause, into: &dependencies)
+            dependencies.append(contentsOf: genericConstraints(
+                node.genericParameterClause, node.genericWhereClause
+            ))
             return memberSet(of: node.memberBlock, owner: name)
         }
         dependencies.append(contentsOf: members.dependencies)
@@ -357,6 +369,9 @@ final class DeclarationCollector {
         let members: MemberSet = binding(scopeNames(node.genericParameterClause)) {
             // An actor cannot inherit, so every inherited type is a conformance.
             protocolNames = conformances(node.inheritanceClause, into: &dependencies)
+            dependencies.append(contentsOf: genericConstraints(
+                node.genericParameterClause, node.genericWhereClause
+            ))
             return memberSet(of: node.memberBlock, owner: name)
         }
         dependencies.append(contentsOf: members.dependencies)
@@ -406,16 +421,9 @@ final class DeclarationCollector {
                 }
             }
 
-            if let genericClause = node.genericParameterClause {
-                for parameter in genericClause.parameters {
-                    guard let constraint = parameter.inheritedType else { continue }
-                    dependencies.append(contentsOf: typeDependencies(
-                        on: constraint,
-                        kind: .conformance,
-                        at: location(of: Syntax(constraint))
-                    ))
-                }
-            }
+            dependencies.append(contentsOf: genericConstraints(
+                node.genericParameterClause, node.genericWhereClause
+            ))
 
             return memberSet(of: node.memberBlock, owner: name)
         }
@@ -447,6 +455,7 @@ final class DeclarationCollector {
         // written above the `associatedtype` that introduces them.
         let members: MemberSet = binding(associatedTypeNames(in: node.memberBlock).union(["Self"])) {
             inherited = conformances(node.inheritanceClause, into: &dependencies)
+            dependencies.append(contentsOf: genericConstraints(nil, node.genericWhereClause))
             return memberSet(of: node.memberBlock, owner: name)
         }
         dependencies.append(contentsOf: members.dependencies)
@@ -483,6 +492,7 @@ final class DeclarationCollector {
                 kind: .extension,
                 at: location(of: Syntax(node.extendedType))
             ))
+            dependencies.append(contentsOf: genericConstraints(nil, node.genericWhereClause))
             return memberSet(of: node.memberBlock, owner: name)
         }
         dependencies.append(contentsOf: members.dependencies)
@@ -539,7 +549,9 @@ final class DeclarationCollector {
     private func makeFunction(_ node: FunctionDeclSyntax, parent: String?) -> SwiftFunctionDeclaration {
         let parameterList = node.signature.parameterClause.parameters
         let dependencies = binding(scopeNames(node.genericParameterClause)) {
-            signatureDependencies(of: node.signature)
+            genericConstraints(node.genericParameterClause, node.genericWhereClause)
+                + signatureDependencies(of: node.signature)
+                + bodyDependencies(in: node.body)
         }
 
         return SwiftFunctionDeclaration(
@@ -563,7 +575,9 @@ final class DeclarationCollector {
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
             dependencies: binding(scopeNames(node.genericParameterClause)) {
-                signatureDependencies(of: node.signature)
+                genericConstraints(node.genericParameterClause, node.genericWhereClause)
+                    + signatureDependencies(of: node.signature)
+                    + bodyDependencies(in: node.body)
             },
             filePath: filePath,
             location: location(of: Syntax(node)),
@@ -579,7 +593,7 @@ final class DeclarationCollector {
         SwiftDeinitializerDeclaration(
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: [],
+            dependencies: bodyDependencies(in: node.body),
             filePath: filePath,
             location: location(of: Syntax(node)),
             body: node.body?.trimmedDescription,
@@ -592,6 +606,10 @@ final class DeclarationCollector {
         let parameterList = node.parameterClause.parameters
 
         binding(scopeNames(node.genericParameterClause)) {
+            dependencies.append(contentsOf: genericConstraints(
+                node.genericParameterClause, node.genericWhereClause
+            ))
+
             for parameter in parameterList {
                 dependencies.append(contentsOf: typeDependencies(
                     on: parameter.type,
@@ -605,6 +623,8 @@ final class DeclarationCollector {
                 kind: .typeUsage,
                 at: location(of: Syntax(node.returnClause))
             ))
+
+            dependencies.append(contentsOf: bodyDependencies(in: node.accessorBlock))
         }
 
         return SwiftSubscriptDeclaration(
@@ -653,11 +673,12 @@ final class DeclarationCollector {
 
         // A generic parameter of the alias itself is not an outside dependency.
         let dependencies = binding(generics) {
-            typeDependencies(
-                on: node.initializer.value,
-                kind: .typeUsage,
-                at: location(of: Syntax(node.initializer.value))
-            )
+            genericConstraints(node.genericParameterClause, node.genericWhereClause)
+                + typeDependencies(
+                    on: node.initializer.value,
+                    kind: .typeUsage,
+                    at: location(of: Syntax(node.initializer.value))
+                )
         }
 
         return SwiftTypealiasDeclaration(
@@ -679,7 +700,8 @@ final class DeclarationCollector {
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
             dependencies: binding(scopeNames(node.genericParameterClause)) {
-                signatureDependencies(of: node.signature)
+                genericConstraints(node.genericParameterClause, node.genericWhereClause)
+                    + signatureDependencies(of: node.signature)
             },
             filePath: filePath,
             location: location(of: Syntax(node)),
@@ -770,12 +792,21 @@ final class DeclarationCollector {
             if binding.typeAnnotation == nil, let initializer = initialValue,
                let inferred = inferTypeName(from: initializer) {
                 type = inferred
-                dependencies.append(contentsOf: typeDependencies(
-                    onInferredName: inferred,
-                    kind: .typeUsage,
-                    at: location(of: Syntax(initializer))
-                ))
+
+                // With bodies read, the initializer is walked below and reports the same
+                // name with more precision — `.instantiation` for `HTTPClient()` rather
+                // than a guess. Recording both would double every inferred property.
+                if dependencyDepth == .signatures {
+                    dependencies.append(contentsOf: typeDependencies(
+                        onInferredName: inferred,
+                        kind: .typeUsage,
+                        at: location(of: Syntax(initializer))
+                    ))
+                }
             }
+
+            dependencies.append(contentsOf: bodyDependencies(in: initialValue))
+            dependencies.append(contentsOf: bodyDependencies(in: binding.accessorBlock))
 
             properties.append(SwiftPropertyDeclaration(
                 name: pattern.identifier.text,
@@ -930,6 +961,82 @@ final class DeclarationCollector {
                 location: location,
                 reference: reference
             ))
+        }
+
+        return dependencies
+    }
+
+    /// What a body reaches for, when the policy asks for it.
+    ///
+    /// A body may mention the same type many times, so de-duplication here is by
+    /// location as well as name: constructing a `URL` on two lines is two dependencies,
+    /// and one construction seen once by two visitors is one.
+    private func bodyDependencies<Node: SyntaxProtocol>(in node: Node?) -> [SwiftDependency] {
+        guard dependencyDepth == .signaturesAndBodies, let node else { return [] }
+
+        let walker = BodyDependencyCollector(
+            boundNames: boundNames,
+            diagnostics: diagnostics,
+            converter: converter,
+            filePath: filePath
+        )
+        walker.walk(node)
+
+        var seen: Set<SwiftDependency> = []
+        var dependencies: [SwiftDependency] = []
+
+        for found in walker.found {
+            if ignoresStandardLibraryTypes, found.reference.isStandardLibraryType { continue }
+            let dependency = SwiftDependency(
+                name: found.reference.qualifiedName,
+                kind: found.kind,
+                location: found.location,
+                reference: found.reference
+            )
+            guard seen.insert(dependency).inserted else { continue }
+            dependencies.append(dependency)
+        }
+
+        return dependencies
+    }
+
+    /// The bounds a declaration writes on its own generic parameters, including those in
+    /// a `where` clause. `func send<T: Codable>(_ value: T)` depends on `Codable`: the
+    /// parameter is a placeholder, but the requirement names a real type.
+    private func genericConstraints(
+        _ clause: GenericParameterClauseSyntax?,
+        _ whereClause: GenericWhereClauseSyntax? = nil
+    ) -> [SwiftDependency] {
+        var dependencies: [SwiftDependency] = []
+
+        func append(_ type: TypeSyntax) {
+            dependencies.append(contentsOf: typeDependencies(
+                on: type,
+                kind: .genericConstraint,
+                at: location(of: Syntax(type))
+            ))
+        }
+
+        if let clause {
+            for parameter in clause.parameters {
+                guard let inherited = parameter.inheritedType else { continue }
+                append(inherited)
+            }
+        }
+
+        if let whereClause {
+            for requirement in whereClause.requirements {
+                switch requirement.requirement {
+                case .conformanceRequirement(let node):
+                    append(node.rightType)
+                case .sameTypeRequirement(let node):
+                    append(node.leftType)
+                    append(node.rightType)
+                case .layoutRequirement:
+                    // `T: AnyObject`-style layout constraints name no type.
+                    break
+                }
+            }
         }
 
         return dependencies

@@ -83,7 +83,7 @@ fixture: ConditionalCompilation.swift
     hasBody: true
     modifiers: []
     annotations: []
-    dependencies: [DebugTool/typeUsage/plain@12:18]
+    dependencies: [DebugTool/instantiation/plain@12:33, DebugTool/typeUsage/plain@12:18]
 
 ## top-level properties (0)
   <none>

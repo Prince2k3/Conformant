@@ -43,7 +43,7 @@ fixture: Extensions.swift
     protocols: []
     modifiers: []
     annotations: []
-    dependencies: [Array/extension/plain@7:11, Element.Item/typeUsage/array@8:33]
+    dependencies: [Array/extension/plain@7:11, Element.Item/typeUsage/array@8:33, Repository/genericConstraint/plain@7:32]
     properties:
       <none>
     methods:

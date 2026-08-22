@@ -20,7 +20,7 @@ fixture: Actors.swift
     protocols: []
     modifiers: [public]
     annotations: []
-    dependencies: [AccountID/typeUsage/plain@14:40, Decimal/typeUsage/plain@2:26, Decimal/typeUsage/plain@9:35, Receipt/typeUsage/plain@9:57, TransactionLedger/typeUsage/plain@3:25, TransactionLedger/typeUsage/plain@5:25]
+    dependencies: [AccountID/instantiation/plain@14:52, AccountID/typeUsage/plain@14:40, Decimal/typeUsage/plain@2:26, Decimal/typeUsage/plain@9:35, Receipt/typeUsage/plain@9:57, TransactionLedger/typeUsage/plain@3:25, TransactionLedger/typeUsage/plain@5:25]
     properties:
       - balance: Decimal @2:17
           computed: false
@@ -39,7 +39,7 @@ fixture: Actors.swift
           initialValue: <none>
           modifiers: [nonisolated, public]
           annotations: []
-          dependencies: [AccountID/typeUsage/plain@14:40]
+          dependencies: [AccountID/instantiation/plain@14:52, AccountID/typeUsage/plain@14:40]
     methods:
       - init @5:5
           parameters: [ledger: TransactionLedger]
@@ -61,14 +61,14 @@ fixture: Actors.swift
     protocols: []
     modifiers: []
     annotations: [@globalActor]
-    dependencies: [BackgroundActor/typeUsage/plain@19:25]
+    dependencies: [BackgroundActor/instantiation/plain@19:25]
     properties:
       - shared: BackgroundActor @19:16
           computed: false
           initialValue: BackgroundActor()
           modifiers: [static]
           annotations: []
-          dependencies: [BackgroundActor/typeUsage/plain@19:25]
+          dependencies: [BackgroundActor/instantiation/plain@19:25]
     methods:
       <none>
 

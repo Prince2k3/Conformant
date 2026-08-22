@@ -17,7 +17,7 @@ fixture: Properties.swift
     protocols: []
     modifiers: []
     annotations: []
-    dependencies: [ExpensiveResource/typeUsage/plain@12:25, Int/typeUsage/plain@11:17, Int/typeUsage/plain@11:17, Int/typeUsage/plain@16:19, Int/typeUsage/plain@17:24, Item/typeUsage/array@8:27, Owner/typeUsage/plain@14:24, SomeDelegate/typeUsage/optional@13:24, String/typeUsage/plain@11:30]
+    dependencies: [ExpensiveResource/instantiation/plain@12:45, ExpensiveResource/typeUsage/plain@12:25, Int/typeUsage/plain@11:17, Int/typeUsage/plain@11:17, Int/typeUsage/plain@16:19, Int/typeUsage/plain@17:24, Item/typeUsage/array@8:27, Owner/typeUsage/plain@14:24, SomeDelegate/typeUsage/optional@13:24, String/typeUsage/plain@11:30]
     properties:
       - locale: Any @7:40
           computed: false
@@ -54,7 +54,7 @@ fixture: Properties.swift
           initialValue: ExpensiveResource()
           modifiers: [lazy]
           annotations: []
-          dependencies: [ExpensiveResource/typeUsage/plain@12:25]
+          dependencies: [ExpensiveResource/instantiation/plain@12:45, ExpensiveResource/typeUsage/plain@12:25]
       - delegate: SomeDelegate? @13:14
           computed: false
           initialValue: <none>
@@ -115,7 +115,7 @@ fixture: Properties.swift
     initialValue: Configuration()
     modifiers: []
     annotations: []
-    dependencies: [Configuration/typeUsage/plain@3:23]
+    dependencies: [Configuration/instantiation/plain@3:39, Configuration/typeUsage/plain@3:23]
 - topLevelVariable: Any @4:5
     computed: false
     initialValue: 42

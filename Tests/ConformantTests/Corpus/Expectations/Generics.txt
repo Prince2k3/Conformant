@@ -11,7 +11,7 @@ fixture: Generics.swift
     protocols: []
     modifiers: [public]
     annotations: []
-    dependencies: [CacheEntry/typeUsage/array@3:16, Dictionary/typeUsage/plain@3:16, Left/typeUsage/tuple@5:23, Request/typeUsage/function@4:20, Response/typeUsage/function@4:20, Right/typeUsage/tuple@5:23, String/typeUsage/plain@3:16]
+    dependencies: [CacheEntry/typeUsage/array@3:16, Codable/genericConstraint/plain@1:28, Dictionary/typeUsage/plain@3:16, Error/genericConstraint/plain@1:46, Left/typeUsage/tuple@5:23, Request/typeUsage/function@4:20, Response/typeUsage/function@4:20, Right/typeUsage/tuple@5:23, String/typeUsage/plain@3:16]
     properties:
       - value: Element @2:9
           computed: false
@@ -116,7 +116,7 @@ fixture: Generics.swift
     hasBody: true
     modifiers: []
     annotations: []
-    dependencies: []
+    dependencies: [Comparable/genericConstraint/composition@8:47, Hashable/genericConstraint/composition@8:47]
 
 ## top-level properties (0)
   <none>

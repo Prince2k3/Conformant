@@ -47,7 +47,7 @@ public class DependsOnRule: ArchitectureRule {
 
         for declaration in sourceDeclarations {
             for dependency in declaration.dependencies {
-                if dependency.kind != .typeUsage && dependency.kind != .inheritance && dependency.kind != .conformance {
+                if !dependency.kind.couplesToType {
                     continue
                 }
 

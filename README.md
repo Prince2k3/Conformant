@@ -7,7 +7,7 @@ Conformant is a tool that leverages Swift’s [swift-syntax](https://github.com/
 - **Complete Declaration Coverage**: Every form in the Swift grammar is extracted — classes, structs, enums, protocols, actors, extensions, typealiases, functions, properties, initializers, deinitializers, subscripts, associated types, macros, operators, and precedence groups. Nested types are collected in their own right, under a qualified name (`Outer.Inner`).
 - **Architectural Rules**: Define and enforce architectural boundaries between different layers of your application.
 - **Import Analysis**: Track and verify import dependencies between modules.
-- **Dependency Tracking**: Analyze type dependencies across your entire codebase.
+- **Dependency Tracking**: Analyze type dependencies across your entire codebase — signatures *and* bodies, so a type constructed inside a method is as visible to a layer rule as a stored property is.
 - **Freezing Rules**: Record existing violations and only report new ones to support gradual architectural improvement.
 - **Custom Assertions**: Create custom code quality rules as unit tests.
 - **XCTest Integration**: Run consistency checks as part of your test suite.
@@ -83,7 +83,7 @@ Individual reactions can be mixed:
 let policy = ScopePolicy(onSyntaxError: .warn, onUnreadableFile: .fail, onEmptyScope: .fail)
 ```
 
-`ScopePolicy` also carries `ignoresStandardLibraryTypes` — see
+`ScopePolicy` also carries `dependencyDepth` and `ignoresStandardLibraryTypes` — see
 [Dependency Analysis](#dependency-analysis).
 
 ### Basic Code Structure Validation
@@ -586,6 +586,61 @@ scope.structs().dependingOn(type: "Foundation.URL")  // matches
 scope.structs().dependingOn(type: "URL")             // also matches
 scope.structs().dependingOn(type: "Foundation")      // does not — nothing named it alone
 ```
+
+### Kinds
+
+Every dependency records *how* the type was reached, so a rule can be as narrow as it
+needs to be:
+
+| Kind | Written as |
+|---|---|
+| `.inheritance` | `final class Cache: BaseCache` |
+| `.conformance` | `struct Money: Hashable` |
+| `.typeUsage` | a type written down — a parameter, return type, property annotation, alias, cast |
+| `.instantiation` | a type constructed in a body — `UserRepository()` |
+| `.staticAccess` | a static or class member reached in a body — `DatabaseClient.shared` |
+| `.genericConstraint` | a bound on a generic parameter — the `Codable` in `func send<T: Codable>(_ value: T)` |
+| `.extension` | `extension Array` — the type being extended |
+| `.import` | `import Foundation` |
+
+`kind.couplesToType` answers whether a kind names a type the declaration reaches out to,
+and is what the layer rules ask of each dependency. Every kind above is `true` except
+`.import`, which module rules match by name on their own path, and `.extension`, whose
+subject is the declaration itself.
+
+### Signatures and bodies
+
+Bodies are read by default. `func run() { UserRepository().load() }` couples to
+`UserRepository` just as firmly as a stored property would, so the body walker reports it:
+
+```swift
+final class Controller {
+    func run() {
+        let repository = UserRepository()   // UserRepository / .instantiation
+        DatabaseClient.shared.connect()     // DatabaseClient / .staticAccess
+        let cached = value as? CachedUser   // CachedUser    / .typeUsage
+    }
+}
+```
+
+The walker is syntactic — it reports what was written, using Swift's own capitalization
+convention to decide what reads as a type. A dotted chain's leading run of capitalized
+components is the type and the rest are members, so `DatabaseClient.shared.fetch()` is one
+static access on `DatabaseClient` and `Notification.Name.didChange` is one on
+`Notification.Name`. A type whose members are capitalized breaks that convention and will
+be read as a nested type.
+
+`ScopePolicy.dependencyDepth` turns bodies off:
+
+```swift
+var policy = ScopePolicy.strict
+policy.dependencyDepth = .signatures        // default is .signaturesAndBodies
+```
+
+Like `ignoresStandardLibraryTypes`, this can only make rules easier to satisfy: a class
+that touches a forbidden layer only inside a method body passes `mustNotDependOn` once
+bodies are hidden. Reach for it when an existing suite needs a staged migration, not as a
+default.
 
 ### Type references
 

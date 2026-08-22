@@ -55,7 +55,10 @@ final class DeclarationDependencyTests: XCTestCase {
         // From configure method
         XCTAssertTrue(deps.containsDependency(name: "URLSessionConfiguration", kind: .typeUsage), "Should depend on URLSessionConfiguration")
 
-        XCTAssertTrue(deps.containsDependency(name: "NetworkService", kind: .typeUsage), "Should depend on NetworkService (static let type)")
+        // `static let shared = NetworkService(...)` is a construction, not a mention of a
+        // written-down type: the body walker reports it as such rather than inferring a name.
+        XCTAssertTrue(deps.containsDependency(name: "NetworkService", kind: .instantiation), "Should depend on NetworkService (static let initializer)")
+        XCTAssertTrue(deps.containsDependency(name: "URL", kind: .instantiation), "Should depend on URL (built inside the static let initializer)")
     }
 
     func testStructDependencies() throws {
@@ -261,6 +264,120 @@ final class DeclarationDependencyTests: XCTestCase {
         XCTAssertEqual(filtered.structs.first?.dependencies.map(\.name), [])
     }
 
+    private func classDependencies(_ source: String,
+                                   depth: ScopePolicy.DependencyDepth = .signaturesAndBodies) -> [String] {
+        let file = SwiftSyntaxParser(dependencyDepth: depth).parse(source: source, path: "Probe.swift")
+        return (file.classes.first?.dependencies ?? []).map { "\($0.name)/\($0.kind)" }
+    }
+
+    func testBodiesReportWhatTheyConstructAndReachFor() {
+        // A signature says what a declaration promises; a body says what it actually uses.
+        // `UserRepository()` couples `Controller` to `UserRepository` as firmly as a stored
+        // property would, and a layer rule that could not see it would pass while the
+        // coupling it exists to catch went unreported.
+        XCTAssertEqual(
+            classDependencies("""
+            final class Controller {
+                func run() {
+                    let repository = UserRepository()
+                    DatabaseClient.shared.connect()
+                    let value = Parser.parse("x") as? ParsedValue
+                    _ = repository
+                    _ = value
+                }
+            }
+            """),
+            [
+                "UserRepository/instantiation",
+                "DatabaseClient/staticAccess",
+                "Parser/staticAccess",
+                "ParsedValue/typeUsage",
+            ]
+        )
+    }
+
+    func testDottedChainNamesTheTypeAndNotItsMembers() {
+        // `A.b.c()` is one mention of `A`, not three dependencies. The split follows Swift's
+        // capitalization convention: the leading run of capitalized components is the type.
+        XCTAssertEqual(
+            classDependencies("final class C { func f() { Notification.Name.didChange.hashValue.hash() } }"),
+            ["Notification.Name/staticAccess"]
+        )
+        // A capitalized *member* breaks that convention and reads as a nested type. This is
+        // the documented cost of a syntactic walker: it reports what was written.
+        XCTAssertEqual(
+            classDependencies("final class C { func f() { _ = Notification.Name.NSCalendarDayChanged } }"),
+            ["Notification.Name.NSCalendarDayChanged/staticAccess"]
+        )
+        // Nothing capitalized at the root means nothing that reads as a type.
+        XCTAssertEqual(classDependencies("final class C { func f() { print(items.count) } }"), [])
+    }
+
+    func testLocalBindingsAreNotDependencies() {
+        // A name bound in the body is the body's own, not a type it reaches for.
+        XCTAssertEqual(
+            classDependencies("""
+            final class C {
+                func f() {
+                    let Handler = 1
+                    _ = Handler
+                }
+            }
+            """),
+            []
+        )
+    }
+
+    func testDeinitializerBodiesAreRead() {
+        // `deinit` has no signature at all, so its body is the only place its coupling shows.
+        XCTAssertEqual(
+            classDependencies("final class Resource { deinit { Telemetry.record() } }"),
+            ["Telemetry/staticAccess"]
+        )
+    }
+
+    func testGenericConstraintsAreDependencies() {
+        // A generic parameter is a placeholder, but the bound written on it names a real
+        // type: `func send<T: Codable>` depends on `Codable`.
+        XCTAssertEqual(
+            classDependencies("""
+            final class Service {
+                func send<T: Codable>(_ value: T) where T: Sendable {}
+                func same<V>(_ value: V) where V == Token {}
+            }
+            """),
+            [
+                "Codable/genericConstraint",
+                "Sendable/genericConstraint",
+                "Token/genericConstraint",
+            ]
+        )
+    }
+
+    func testDependencyDepthSignaturesStopsAtTheSignature() {
+        let source = "final class Box { func make() -> Widget { Widget(Gear()) } }"
+
+        // Bodies are strictly more information, so the two depths differ only by addition.
+        XCTAssertEqual(
+            classDependencies(source),
+            ["Widget/typeUsage", "Widget/instantiation", "Gear/instantiation"]
+        )
+        XCTAssertEqual(classDependencies(source, depth: .signatures), ["Widget/typeUsage"])
+    }
+
+    func testOnlyTypeCouplingKindsAreSubjectToLayerRules() {
+        // Layer rules ask this question of every dependency, so a kind that answered wrongly
+        // would make a rule pass over real coupling.
+        for kind in [DependencyKind.inheritance, .conformance, .typeUsage,
+                     .instantiation, .staticAccess, .genericConstraint] {
+            XCTAssertTrue(kind.couplesToType, "\(kind) names a type the declaration reaches for")
+        }
+        // Imports are matched by module name on their own path, and an extension's subject is
+        // the declaration itself rather than something it reaches out to.
+        XCTAssertFalse(DependencyKind.import.couplesToType)
+        XCTAssertFalse(DependencyKind.extension.couplesToType)
+    }
+
     func testComplexTypeDependencies() throws {
         let testFilesDirectory = try makeSUT()
         defer {
@@ -294,8 +411,9 @@ final class DeclarationDependencyTests: XCTestCase {
             return
         }
 
-        // Conformance
-        XCTAssertTrue(statusEnum.dependencies.containsDependency(name: "Equatable", kind: .conformance)) // From generic constraint T: Equatable
+        // Generic constraint. A bound on the enum's own type parameter is not a conformance
+        // the enum declares — it is a requirement it places on a caller's type.
+        XCTAssertTrue(statusEnum.dependencies.containsDependency(name: "Equatable", kind: .genericConstraint)) // From generic constraint T: Equatable
         // Raw Type
         XCTAssertTrue(statusEnum.dependencies.containsDependency(name: "String", kind: .typeUsage)) // From ': String' raw type
         // Associated Values
@@ -334,7 +452,7 @@ extension DeclarationDependencyTests {
              private let baseURL: URL
              private let session: URLSession
              public var isActive: Bool = false
-             public static let shared = NetworkService(baseURL: URL(string: "https://api.example.com")!) // TypeUsage: NetworkService, URL, String
+             public static let shared = NetworkService(baseURL: URL(string: "https://api.example.com")!) // Instantiation: NetworkService, URL
          
              // Method Dependencies: URL, URLSession, String, Result, Data, Error, NSError, Void (@escaping is trivia)
              public init(baseURL: URL, session: URLSession = .shared) {
