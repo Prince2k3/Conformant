@@ -220,7 +220,7 @@ public struct Conformant {
     /// first declaration they find and freezing stores baselines line by line, so the order
     /// is part of the output: the same files have to produce the same list every run.
     /// `name`, and then the position in the assembled list, break the tie for declarations
-    /// that share a source position — a total order, so the result never depends on whether
+    /// that share a source position, giving a total order, so the result never depends on whether
     /// `sorted(by:)` happened to be stable.
     private func inSourceOrder(_ declarations: [AnySwiftDeclaration]) -> [AnySwiftDeclaration] {
         declarations.enumerated().sorted { lhs, rhs in

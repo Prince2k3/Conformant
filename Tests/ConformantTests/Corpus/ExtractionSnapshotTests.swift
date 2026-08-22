@@ -29,7 +29,7 @@ import XCTest
 
 /// Pins what the parser extracts from each corpus fixture.
 ///
-/// These tests do not assert that extraction is *correct* — several fixtures record
+/// These tests do not assert that extraction is *correct*; several fixtures record
 /// behavior that is known to be wrong and is scheduled to change. They assert that
 /// extraction is *stable*: any parser change shows up as a reviewable diff rather than
 /// a silent shift in what architecture rules can see.

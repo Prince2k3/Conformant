@@ -32,7 +32,7 @@ import Foundation
 /// detail was invisible to anything but a human watching the console. The messages are
 /// carried on the result instead, so a test can report them.
 public struct ArchitectureCheckResult: Sendable {
-    /// Problems with the scope itself — it was empty, or files in it failed to parse.
+    /// Problems with the scope itself: it was empty, or files in it failed to parse.
     ///
     /// These are reported separately because they invalidate the run: rules evaluated
     /// against a scope that holds nothing all pass, which looks identical to success.
@@ -51,7 +51,7 @@ public struct ArchitectureCheckResult: Sendable {
         scopeProblems.isEmpty && violations.isEmpty
     }
 
-    /// Scope problems first — a violation list produced from a broken scope is not
+    /// Scope problems first, because a violation list produced from a broken scope is not
     /// trustworthy, so the reason the run is invalid should be read before the findings.
     public var messages: [String] {
         scopeProblems + violations

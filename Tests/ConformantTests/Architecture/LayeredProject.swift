@@ -31,13 +31,13 @@ import XCTest
 ///
 /// The architecture-style suites each write a small application laid out the way that
 /// style prescribes, state the style's rules as layer rules, and assert both directions:
-/// the clean layout passes, and a single misplaced dependency is reported — naming the
+/// the clean layout passes, and a single misplaced dependency is reported, naming the
 /// declaration that reached across the boundary and the dependency it reached for.
 struct LayeredProject {
     let root: String
     let scope: Conformant
 
-    /// Writes `files` — keyed by path relative to the project root — and parses them.
+    /// Writes `files`, keyed by path relative to the project root, and parses them.
     static func write(
         _ files: [String: String],
         named name: String = "LayeredProject",
@@ -64,8 +64,8 @@ struct LayeredProject {
     /// One rule's findings, rendered as `declaration -> dependency (kind)`.
     ///
     /// The rendering is what makes a wrong finding visible. A rule that reports the right
-    /// number of violations for the wrong reason — the enclosing type instead of the one
-    /// that reached, or an unrelated dependency of the same declaration — reads
+    /// number of violations for the wrong reason (the enclosing type instead of the one
+    /// that reached, or an unrelated dependency of the same declaration) reads
     /// differently here, where a bare `XCTAssertFalse(passed)` could not tell them apart.
     func violations(
         of rule: ArchitectureRule,
@@ -105,7 +105,7 @@ struct LayeredProject {
         }
     }
 
-    /// The names of the declarations a layer matched, sorted — for asserting that a layer
+    /// The names of the declarations a layer matched, sorted, for asserting that a layer
     /// caught what its author meant it to catch.
     func declarations(in layer: Layer) -> [String] {
         scope.declarations().filter { layer.resideIn($0) }.map(\.name).sorted()

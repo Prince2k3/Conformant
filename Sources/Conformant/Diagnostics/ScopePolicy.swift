@@ -58,7 +58,7 @@ public struct ScopePolicy: Sendable {
         /// Only what a declaration writes down in its signature: inheritance,
         /// conformances, parameter and return types, property annotations.
         case signatures
-        /// Also what its bodies reach for — types they construct, static members they
+        /// Also what its bodies reach for: types they construct, static members they
         /// touch, and types they name in annotations, casts, and generic arguments.
         case signaturesAndBodies
     }
@@ -101,8 +101,8 @@ public struct ScopePolicy: Sendable {
     /// this build never compiles reports too much, and too much is visible, while a rule
     /// that never saw the branch it was written for passes silently.
     ///
-    /// Set `.activeBranch(_:)` when the duplicate declarations get in the way — an
-    /// `#if canImport(UIKit) / #else` pair of the same type, say — and state the build
+    /// Set `.activeBranch(_:)` when the duplicate declarations get in the way, such as
+    /// an `#if canImport(UIKit) / #else` pair of the same type, and state the build
     /// you mean:
     ///
     /// ```swift

@@ -27,7 +27,7 @@ import XCTest
 @testable import Conformant
 
 /// Domain-Driven Design, in both of its dimensions: the tactical layering inside a
-/// context — domain, application, infrastructure — and the strategic boundary between
+/// context (domain, application, infrastructure) and the strategic boundary between
 /// two bounded contexts.
 ///
 /// `Order` and `Consignment` are different models of overlapping facts, and they are
@@ -146,7 +146,7 @@ final class DDDArchitectureTests: XCTestCase {
         )
     }
 
-    /// The boundary is not symmetrical by accident — it has to be asserted from both
+    /// The boundary is not symmetrical by accident; it has to be asserted from both
     /// sides. Shipping reaching back into Ordering is the same merge in the other
     /// direction, and the anti-corruption layer does not excuse it.
     func testTheOtherContextReachingBackIsReported() throws {
@@ -219,7 +219,7 @@ final class DDDArchitectureTests: XCTestCase {
         """,
         "Ordering/Domain/ShipmentBooking.swift": """
         /// The port the Ordering context states in its own vocabulary. Shipping does not
-        /// appear in it — that is the point.
+        /// appear in it, and that is the point.
         public protocol ShipmentBooking {
             func book(_ order: Order) -> String
         }

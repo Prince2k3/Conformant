@@ -29,7 +29,7 @@ import Foundation
 
 /// Renders a parsed `SwiftFile` as canonical text.
 ///
-/// The rendering is the contract the corpus pins. It is deliberately verbose — every
+/// The rendering is the contract the corpus pins. It is deliberately verbose: every
 /// field the extractor populates appears, so a change anywhere in the parser surfaces
 /// as a reviewable diff instead of a silent behavioral shift. Ordering is stabilized
 /// (declarations by source position, dependencies sorted) so the output depends only on
@@ -309,7 +309,7 @@ enum ExtractionSnapshot {
         return "@\(annotation.name)(\(arguments))"
     }
 
-    /// Dependency locations are rendered as line:column only — the absolute file path
+    /// Dependency locations are rendered as line:column only, because the absolute file path
     /// varies per machine and would make snapshots unshareable.
     private static func renderDependency(_ dependency: SwiftDependency) -> String {
         // The written form is part of the extraction, so it is part of the record: a

@@ -48,14 +48,14 @@ import Foundation
 /// ```
 public struct BuildConfiguration: Hashable, Sendable {
 
-    /// The `os(...)` argument this build matches — `"iOS"`, `"macOS"`, `"Linux"`.
+    /// The `os(...)` argument this build matches: `"iOS"`, `"macOS"`, `"Linux"`.
     /// `nil` leaves every `os(...)` test undecided.
     public var operatingSystem: String?
 
-    /// The `arch(...)` argument this build matches — `"arm64"`, `"x86_64"`.
+    /// The `arch(...)` argument this build matches: `"arm64"`, `"x86_64"`.
     public var architecture: String?
 
-    /// The `targetEnvironment(...)` argument this build matches — `"simulator"`,
+    /// The `targetEnvironment(...)` argument this build matches: `"simulator"`,
     /// `"macCatalyst"`. `nil` leaves every `targetEnvironment(...)` test undecided rather
     /// than answering "device": a device build is itself a statement about the build.
     public var targetEnvironment: String?
@@ -70,7 +70,7 @@ public struct BuildConfiguration: Hashable, Sendable {
     /// The flags this build defines with `-D`.
     ///
     /// Unlike the other fields, a flag that is *not* listed reads as unset rather than
-    /// unknown — the compiler knows its whole `-D` set, and so does whoever writes this
+    /// unknown: the compiler knows its whole `-D` set, and so does whoever writes this
     /// configuration. `#if DEBUG` is therefore dropped by a configuration that does not
     /// name `DEBUG`, which is the point, and a misspelled flag drops code that should have
     /// been read. Spell them the way the build does.
@@ -78,7 +78,7 @@ public struct BuildConfiguration: Hashable, Sendable {
 
     /// The modules `canImport(...)` answers yes for.
     ///
-    /// `nil` — the default — means the answer is unknown, so both branches of
+    /// `nil`, the default, means the answer is unknown, so both branches of
     /// `#if canImport(UIKit)` stay in the scope. Conformant reads source; it has no module
     /// map and cannot find out.
     public var importableModules: Set<String>?

@@ -99,7 +99,7 @@ extension SwiftModifier: RawRepresentable {
     /// Non-failable: an unrecognized keyword becomes ``unknown(_:)``.
     ///
     /// It still satisfies `RawRepresentable`'s failable requirement, so `SwiftModifier(rawValue:)`
-    /// keeps working at existing call sites — it just never returns `nil`.
+    /// keeps working at existing call sites; it just never returns `nil`.
     public init(rawValue: String) {
         self = SwiftModifier.byKeyword[rawValue] ?? .unknown(rawValue)
     }

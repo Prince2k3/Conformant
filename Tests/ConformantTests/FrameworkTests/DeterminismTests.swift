@@ -32,8 +32,8 @@ import XCTest
 /// Rules report the first declaration that breaks them, freezing writes violations into a
 /// baseline that is diffed against the next run, and snapshots record extraction verbatim.
 /// All three read the order of the lists the scope hands back, so an order that came from
-/// which collection pass ran first — or from which core finished first, now that files are
-/// parsed in parallel — would show up as spurious churn in a baseline nobody changed.
+/// which collection pass ran first, or from which core finished first now that files are
+/// parsed in parallel, would show up as spurious churn in a baseline nobody changed.
 final class DeterminismTests: XCTestCase {
 
     // MARK: - One declaration's dependencies
@@ -83,7 +83,7 @@ final class DeterminismTests: XCTestCase {
 
     func testNestingOrderSurvivesWithinOnePosition() {
         // Everything a written type contributes shares that type's position, so the tie is
-        // broken by the order the type reads in — not alphabetically.
+        // broken by the order the type reads in, not alphabetically.
         let file = SwiftSyntaxParser().parse(
             source: "struct Probe { let value: Result<Zebra, Apple> }",
             path: "Probe.swift"

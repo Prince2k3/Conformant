@@ -29,7 +29,7 @@ import Foundation
 /// Represents a Swift actor declaration.
 ///
 /// Actors are reference types like classes but cannot inherit from another actor, so
-/// there is no superclass — every inherited type in the clause is a conformance.
+/// there is no superclass: every inherited type in the clause is a conformance.
 public class SwiftActorDeclaration: SwiftDeclaration {
     public let name: String
     public let modifiers: [SwiftModifier]

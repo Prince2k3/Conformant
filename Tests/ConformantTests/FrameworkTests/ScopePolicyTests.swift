@@ -173,7 +173,7 @@ final class ScopePolicyTests: XCTestCase {
     }
 
     /// The previous implementation matched skipped directories by substring, so a directory
-    /// merely *containing* "Products" — such as "ProductsFeature" — was dropped along with
+    /// merely *containing* "Products", such as "ProductsFeature", was dropped along with
     /// the source in it.
     func testScopeDoesNotSkipDirectoriesThatMerelyContainAnExcludedName() throws {
         let featureDirectory = root.appendingPathComponent("ProductsFeature")

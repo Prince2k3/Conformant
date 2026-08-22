@@ -29,7 +29,7 @@ import Foundation
 /// A single named type as it was *written* in the source.
 ///
 /// The parser has no type checker, so a `TypeReference` records syntax, not semantics.
-/// `Swift.Int` is one reference whose `qualifiedName` is `"Swift.Int"` — it is never
+/// `Swift.Int` is one reference whose `qualifiedName` is `"Swift.Int"`, and it is never
 /// split into `Swift` and `Int`, and nothing here resolves `Int` to the standard library
 /// or `Entity.ID` to a concrete type.
 public struct TypeReference: Hashable, Sendable {
@@ -46,7 +46,7 @@ public struct TypeReference: Hashable, Sendable {
         case optional
         /// `[T]`.
         case array
-        /// `[Key: Value]` — both the key and the value carry this form.
+        /// `[Key: Value]`; both the key and the value carry this form.
         case dictionary
         /// A parameter or return type of a function type: `(Request) -> Response`.
         case function
@@ -66,10 +66,10 @@ public struct TypeReference: Hashable, Sendable {
         case suppressed
     }
 
-    /// The last component of the written name — `Int` in `Swift.Int`, `ID` in `Entity.ID`.
+    /// The last component of the written name: `Int` in `Swift.Int`, `ID` in `Entity.ID`.
     public let baseName: String
 
-    /// The name exactly as written, dots included — `Swift.Int`, `Entity.ID`, `Int`.
+    /// The name exactly as written, dots included: `Swift.Int`, `Entity.ID`, `Int`.
     public let qualifiedName: String
 
     /// The leftmost component of a dotted name, or `nil` when the name has no dot.
@@ -80,7 +80,7 @@ public struct TypeReference: Hashable, Sendable {
     public let moduleQualifier: String?
 
     /// The arguments of an explicit generic clause: `Data` and `NetworkError` in
-    /// `Result<Data, NetworkError>`. Empty for sugar — `[T]` records `T` as the
+    /// `Result<Data, NetworkError>`. Empty for sugar: `[T]` records `T` as the
     /// reference itself, not as an argument of `Array`.
     public let genericArguments: [TypeReference]
 
@@ -103,7 +103,7 @@ public struct TypeReference: Hashable, Sendable {
 
     /// The identifier a name is rooted at: the qualifier when there is one, the base name
     /// otherwise. This is the name that a generic parameter or `associatedtype` in scope
-    /// can shadow — `Entity` binds `Entity.ID`, not just `Entity`.
+    /// can shadow: `Entity` binds `Entity.ID`, not just `Entity`.
     public var rootName: String {
         moduleQualifier ?? baseName
     }
@@ -162,7 +162,7 @@ public struct TypeReference: Hashable, Sendable {
     /// Whether `name` names this reference.
     ///
     /// Matches the written name exactly, or any suffix of it that starts at a component
-    /// boundary — so a reference to `MyModule.Deep.Type1` answers to `MyModule.Deep.Type1`,
+    /// boundary, so a reference to `MyModule.Deep.Type1` answers to `MyModule.Deep.Type1`,
     /// `Deep.Type1`, and `Type1`, but not to `Type` or `Deep`.
     public func matches(_ name: String) -> Bool {
         qualifiedName == name || qualifiedName.hasSuffix(".\(name)")

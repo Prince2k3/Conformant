@@ -39,7 +39,7 @@ final class DiagnosticSink {
     }
 
     /// Records a construct the extractor recognized but does not model. The surrounding
-    /// declaration is still produced — only this detail is missing.
+    /// declaration is still produced; only this detail is missing.
     func unsupported(_ message: String, at location: SourceLocation) {
         record(ParseDiagnostic(
             severity: .warning,

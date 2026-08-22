@@ -29,7 +29,7 @@ import Foundation
 /// Builds a scope from the file system under a `ScopePolicy`.
 ///
 /// Discovery, parsing, and policy enforcement live here so that all three scope entry
-/// points behave identically — previously each one had its own hand-rolled traversal,
+/// points behave identically. Previously each one had its own hand-rolled traversal,
 /// its own set of skipped directories, and its own `print`-and-continue error handling.
 struct ScopeBuilder {
     let policy: ScopePolicy
@@ -125,7 +125,7 @@ struct ScopeBuilder {
             _ = try react(to: .directoryNotReadable(path: url.path, underlying: error), policy.onUnreadableFile)
         }
 
-        // Sort so that scope contents — and therefore rule output and frozen baselines —
+        // Sort so that scope contents, and therefore rule output and frozen baselines,
         // do not depend on file system enumeration order.
         return urls.sorted { $0.path < $1.path }
     }
@@ -162,7 +162,7 @@ struct ScopeBuilder {
     }
 
     /// What reading and parsing one file produced. Failures are carried rather than thrown
-    /// so that the policy — which may turn a failure into a diagnostic, or into nothing —
+    /// so that the policy, which may turn a failure into a diagnostic or into nothing,
     /// is applied once, in order, after every file has been read.
     private enum Outcome {
         case parsed(SwiftFile)
@@ -174,8 +174,8 @@ struct ScopeBuilder {
     ///
     /// Parsing is the expensive part of building a scope and each file is independent of
     /// every other, so a large project has no reason to read them one at a time. The work
-    /// stays synchronous: making it `async` would push `Conformant.scope(...)` — and every
-    /// test that calls it — into an async context for no gain.
+    /// stays synchronous: making it `async` would push `Conformant.scope(...)`, and every
+    /// test that calls it, into an async context for no gain.
     ///
     /// Each iteration writes to its own index and reads nothing another iteration writes,
     /// so the buffer needs no lock. `SwiftSyntaxParser` holds only its configuration and

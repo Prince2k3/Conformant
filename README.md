@@ -4,10 +4,10 @@ Conformant is a tool that leverages Swift’s [swift-syntax](https://github.com/
 
 ## Features
 
-- **Complete Declaration Coverage**: Every form in the Swift grammar is extracted — classes, structs, enums, protocols, actors, extensions, typealiases, functions, properties, initializers, deinitializers, subscripts, associated types, macros, operators, and precedence groups. Nested types are collected in their own right, under a qualified name (`Outer.Inner`).
-- **Architectural Rules**: Define and enforce architectural boundaries between different layers of your application.
+- **Complete Declaration Coverage**: Every form in the Swift grammar is extracted: classes, structs, enums, protocols, actors, extensions, typealiases, functions, properties, initializers, deinitializers, subscripts, associated types, macros, operators, and precedence groups. Nested types are collected in their own right, under a qualified name (`Outer.Inner`).
+- **Architectural Rules**: Define and enforce architectural boundaries between different layers of your application. MVC, MVVM, Clean Architecture, DDD, VIPER and Hexagonal are each [stated as a handful of rules](#stating-a-style-as-rules).
 - **Import Analysis**: Track and verify import dependencies between modules. An `import` carries a dependency on the module it names, so a layer defined by module is reached the moment another layer imports it.
-- **Dependency Tracking**: Analyze type dependencies across your entire codebase — signatures *and* bodies, so a type constructed inside a method is as visible to a layer rule as a stored property is.
+- **Dependency Tracking**: Analyze type dependencies across your entire codebase, in signatures *and* bodies, so a type constructed inside a method is as visible to a layer rule as a stored property is.
 - **Freezing Rules**: Record existing violations and only report new ones to support gradual architectural improvement.
 - **Custom Assertions**: Create custom code quality rules as unit tests.
 - **XCTest Integration**: Run consistency checks as part of your test suite.
@@ -45,7 +45,7 @@ Then add Conformant as a dependency to your target:
 
 ### Building a Scope
 
-Every check starts from a scope — the set of Swift files to analyze.
+Every check starts from a scope, the set of Swift files to analyze.
 
 ```swift
 // Everything under the current directory
@@ -85,7 +85,7 @@ let policy = ScopePolicy(onSyntaxError: .warn, onUnreadableFile: .fail, onEmptyS
 ```
 
 `ScopePolicy` also carries `dependencyDepth`, `ignoresStandardLibraryTypes`, and
-`conditionalCompilation` — see [Dependency Analysis](#dependency-analysis) and
+`conditionalCompilation`. See [Dependency Analysis](#dependency-analysis) and
 [Conditional compilation](#conditional-compilation).
 
 ### Basic Code Structure Validation
@@ -146,8 +146,8 @@ class ArchitectureTests: XCTestCase {
             
             // Define architecture rules
             rules.add(domain.dependsOnNothing())
-            rules.add(presentation.dependsOn(domain))
-            rules.add(data.dependsOn(domain))
+            rules.add(presentation.onlyDependsOn(domain, core))
+            rules.add(data.onlyDependsOn(domain, core))
             
             // More specific rules
             rules.add(presentation.mustNotDependOn(data))
@@ -163,7 +163,7 @@ class ArchitectureTests: XCTestCase {
 ```
 
 `assertArchitecture` answers yes or no. When you want the detail, use
-`checkArchitecture`, which returns every failure it found — including problems with the
+`checkArchitecture`, which returns every failure it found, including problems with the
 scope itself, reported separately so a run that checked nothing is never mistaken for a
 run that passed:
 
@@ -178,6 +178,176 @@ Under XCTest, `verifyArchitecture` does the same and reports each failure throug
 ```swift
 scope.verifyArchitecture { rules in /* ... */ }
 ```
+
+### Choosing a Rule
+
+| Rule | Holds when |
+| --- | --- |
+| `layer.dependsOnNothing()` | Nothing in the layer names a type from any *other* declared layer. Its own types, and types in no declared layer (the standard library, third-party modules) are fine. |
+| `layer.onlyDependsOn(a, b)` | Every dependency that leaves the layer lands in `a` or `b`. The layer's own types are always allowed. |
+| `layer.mustNotDependOn(a, b)` | No dependency lands in `a` or `b`. Everything else is allowed, including layers you have not thought about yet. |
+| `layer.dependsOn(a)` | Every dependency of the layer lands in `a`, **including dependencies on its own types**. |
+
+`dependsOn` is the strictest of the four and the easiest to misread. It reports every
+dependency that is not in the target layer, so a view that refers to another view beside
+it is reported. Read it as "depends on this layer and nothing else"; when you mean "may
+reach these layers", use `onlyDependsOn`.
+
+Extending a type from another layer is not a violation of any of them: the extended type
+is the declaration's own subject rather than something it reached for, so `.extension`
+dependencies are excluded from layer rules. Every other kind (`typeUsage`,
+`instantiation`, `staticAccess`, `inheritance`, `conformance`, `genericConstraint`,
+`import`) is subject to them.
+
+### Stating a Style as Rules
+
+The layers below are written with `Layer(name:modules:predicate:)` so that an `import` of
+another layer's module is caught as well as a type reference. A layer defined by
+directory alone silently ignores imports.
+
+```swift
+func layer(_ name: String, at directory: String? = nil) -> Layer {
+    let directory = directory ?? name
+    return Layer(name: name, modules: [name], predicate: { $0.filePath.contains("/\(directory)/") })
+}
+```
+
+**MVC**: the controller is the only part that knows both sides:
+
+```swift
+let models = layer("Models"), views = layer("Views"), controllers = layer("Controllers")
+rules.add(models.mustNotDependOn(views, controllers))
+rules.add(views.mustNotDependOn(models, controllers))
+rules.add(controllers.onlyDependsOn(models, views))
+```
+
+Catches the view that formats the model itself, and the view that pushes the next screen.
+
+**MVVM**: the view model is testable without a UI, the view holds no decisions:
+
+```swift
+let model = layer("Model"), viewModel = layer("ViewModel"), view = layer("View")
+rules.add(model.dependsOnNothing())
+rules.add(viewModel.mustNotDependOn(view))
+rules.add(view.onlyDependsOn(viewModel))
+```
+
+Catches the view model that names a row type, and the view that reaches past its view
+model into the repository.
+
+**Clean Architecture**: source-level dependencies point inward:
+
+```swift
+let entities = layer("Entities"), useCases = layer("UseCases")
+let adapters = layer("Adapters"), infrastructure = layer("Infrastructure")
+rules.add(entities.dependsOnNothing())
+rules.add(useCases.onlyDependsOn(entities))
+rules.add(adapters.onlyDependsOn(useCases, entities))
+rules.add(infrastructure.onlyDependsOn(adapters, useCases, entities))
+```
+
+The inversion is what keeps the middle ring clean: the use case names the port it
+declared, and the adapter in the outer ring conforms to it. Catches the use case that
+names a concrete gateway, the entity that constructs a store, and the adapter that skips
+its use case.
+
+**Hexagonal (ports and adapters)**: the application names only its ports:
+
+```swift
+let domain = layer("Domain"), ports = layer("Ports")
+let inbound = layer("Inbound", at: "Adapters/Inbound")
+let outbound = layer("Outbound", at: "Adapters/Outbound")
+rules.add(domain.onlyDependsOn(ports))
+rules.add(ports.onlyDependsOn(domain))
+rules.add(inbound.onlyDependsOn(ports, domain))
+rules.add(outbound.onlyDependsOn(ports, domain))
+rules.add(domain.mustNotDependOn(inbound, outbound))
+```
+
+Catches the domain that constructs a driven adapter, the driving adapter that calls a
+driven one directly, and the port written against one particular adapter.
+
+**VIPER**: five roles and a fixed set of arrows:
+
+```swift
+let view = layer("View"), interactor = layer("Interactor"), presenter = layer("Presenter")
+let entity = layer("Entity"), router = layer("Router")
+rules.add(entity.dependsOnNothing())
+rules.add(interactor.onlyDependsOn(entity))
+rules.add(presenter.onlyDependsOn(interactor, router, entity))
+rules.add(view.onlyDependsOn(presenter, entity))
+rules.add(router.onlyDependsOn(view, presenter, interactor))
+```
+
+Catches the interactor that holds a view, the view that calls the interactor directly,
+and the presenter that builds a screen the router should have built.
+
+**DDD**: tactical layering inside each context, and a boundary between contexts:
+
+```swift
+let orderingDomain = layer("OrderingDomain", at: "Ordering/Domain")
+let orderingApplication = layer("OrderingApplication", at: "Ordering/Application")
+let orderingInfrastructure = layer("OrderingInfrastructure", at: "Ordering/Infrastructure")
+let antiCorruption = layer("AntiCorruption", at: "Ordering/AntiCorruption")
+let shippingDomain = layer("ShippingDomain", at: "Shipping/Domain")
+
+rules.add(orderingDomain.dependsOnNothing())
+rules.add(orderingApplication.onlyDependsOn(orderingDomain))
+rules.add(orderingInfrastructure.onlyDependsOn(orderingDomain))
+rules.add(shippingDomain.dependsOnNothing())
+
+// Only the anti-corruption layer speaks both vocabularies.
+rules.add(orderingApplication.mustNotDependOn(shippingDomain))
+rules.add(orderingInfrastructure.mustNotDependOn(shippingDomain))
+rules.add(antiCorruption.onlyDependsOn(orderingDomain, shippingDomain))
+rules.add(shippingDomain.mustNotDependOn(orderingDomain, orderingApplication))
+```
+
+Two contexts model overlapping facts and are meant to stay different. The boundary has to
+be asserted from both sides, because a use case that borrows the other context's type
+merges the two models just as thoroughly in either direction.
+
+Where the translation happens is a question about the whole scope rather than one layer,
+so it is worth asking directly:
+
+```swift
+let shippingVocabulary: Set<String> = ["Consignment", "ShippingService"]
+let speakers = scope.declarations()
+    .filter { !$0.filePath.contains("/Shipping/") }
+    .filter { $0.dependencies.contains { shippingVocabulary.contains($0.name) } }
+    .map(\.name)
+
+XCTAssertEqual(speakers, ["ShippingBookingAdapter"])
+```
+
+Each style above is a runnable suite under
+[`Tests/ConformantTests/Architecture/`](Tests/ConformantTests/Architecture). Each writes a
+small application in that layout, asserts the clean version passes, then injects one file
+per test for the characteristic decay and asserts the declaration, the dependency, and
+the dependency kind that get reported.
+
+### Making Sure a Pass Means Something
+
+A rule over a layer that matched no declaration passes, because there was nothing to
+contradict it, which is what a mistyped directory name produces. The scope is guarded
+against being empty; a layer is not. Assert it where it matters:
+
+```swift
+let declarations = scope.declarations()
+for layer in [domain, data, presentation] {
+    XCTAssertFalse(
+        declarations.filter { layer.resideIn($0) }.isEmpty,
+        "Layer '\(layer.name)' matched no declarations, so every rule about it passes vacuously"
+    )
+}
+```
+
+Two more passes worth distrusting: a scope built with `.signatures` depth records no body
+dependencies, so a rule about instantiation has nothing to find; and a rule that only
+ever ran against types from no declared layer never had a chance to fail. `checkArchitecture`
+reports problems with the scope itself (no files, files that failed to parse)
+separately from violations, so those are visible in the result rather than hidden behind
+a green run.
 
 ### Using Freezing Rules for Legacy Projects
 
@@ -296,7 +466,7 @@ let networking = Layer(name: "Networking", packageTarget: "NetworkingModule")
 // Several targets in one layer
 let uiModules = Layer(name: "UI", packageTargets: ["MyAppUI", "MyAppComponents"])
 
-// Modules that are not targets of this package — a framework, say — with a predicate
+// Modules that are not targets of this package (a framework, say), with a predicate
 // deciding which declarations *reside* in the layer
 let platform = Layer(name: "Platform", modules: ["UIKit", "SwiftUI"]) { _ in false }
 ```
@@ -432,7 +602,7 @@ The Filtering API provides a collection of extension methods on Swift collection
 
 A nested type is named as it is written from the outside, so `Inner` inside `Outer` is
 `Outer.Inner`. Its `simpleName` is `Inner` and its `parentName` is `Outer`. Its
-dependencies belong to it, not to `Outer` — a rule such as "`Outer` must not depend on
+dependencies belong to it, not to `Outer`. A rule such as "`Outer` must not depend on
 `UserRepository`" means what it says.
 
 ```swift
@@ -447,7 +617,7 @@ scope.structs().withParent("Outer")  // ["Outer.Inner"]
 
 | Method | Description |
 |--------|-------------|
-| `dependingOn(type:)` | Depends on specific type — a qualified dependency also matches its trailing name, so `URL` finds `Foundation.URL` |
+| `dependingOn(type:)` | Depends on specific type; a qualified dependency also matches its trailing name, so `URL` finds `Foundation.URL` |
 | `dependingOnModule(_:)` | Depends on specific module |
 | `havingDependencies()` | Has any dependencies |
 
@@ -612,19 +782,19 @@ text, so what a declaration depends on is what it actually wrote:
 
 | Written | Dependencies |
 |---|---|
-| `Foundation.URL` | `Foundation.URL` — one name, not `Foundation` + `URL` |
-| `[UserProfile]` | `UserProfile` — the sugar is not an `Array` dependency |
+| `Foundation.URL` | `Foundation.URL`, one name, not `Foundation` + `URL` |
+| `[UserProfile]` | `UserProfile`; the sugar is not an `Array` dependency |
 | `[String: UserProfile]` | `String`, `UserProfile` |
 | `(Request) -> Response` | `Request`, `Response` |
 | `any Sendable` | `Sendable` |
-| `Any` | none — `Any` is the empty constraint, not a type |
+| `Any` | none; `Any` is the empty constraint, not a type |
 
 Generic parameters, `associatedtype` names, and `Self` are placeholders rather than
 types, so they are never reported:
 
 ```swift
 struct Box<Element> {
-    var first: Element?          // no dependency — Element is Box's own parameter
+    var first: Element?          // no dependency; Element is Box's own parameter
     var label: String            // depends on String
 }
 ```
@@ -635,7 +805,7 @@ boundary, so a rule can name the type however it is written at the use site:
 ```swift
 scope.structs().dependingOn(type: "Foundation.URL")  // matches
 scope.structs().dependingOn(type: "URL")             // also matches
-scope.structs().dependingOn(type: "Foundation")      // does not — nothing named it alone
+scope.structs().dependingOn(type: "Foundation")      // does not; nothing named it alone
 ```
 
 ### Kinds
@@ -647,11 +817,11 @@ needs to be:
 |---|---|
 | `.inheritance` | `final class Cache: BaseCache` |
 | `.conformance` | `struct Money: Hashable` |
-| `.typeUsage` | a type written down — a parameter, return type, property annotation, alias, cast |
-| `.instantiation` | a type constructed in a body — `UserRepository()` |
-| `.staticAccess` | a static or class member reached in a body — `DatabaseClient.shared` |
-| `.genericConstraint` | a bound on a generic parameter — the `Codable` in `func send<T: Codable>(_ value: T)` |
-| `.extension` | `extension Array` — the type being extended |
+| `.typeUsage` | a type written down: a parameter, return type, property annotation, alias, cast |
+| `.instantiation` | a type constructed in a body, as in `UserRepository()` |
+| `.staticAccess` | a static or class member reached in a body, as in `DatabaseClient.shared` |
+| `.genericConstraint` | a bound on a generic parameter, the `Codable` in `func send<T: Codable>(_ value: T)` |
+| `.extension` | `extension Array`, the type being extended |
 | `.import` | `import Foundation` |
 
 `kind.isSubjectToLayerRules` is what the layer rules ask of each dependency. Every kind
@@ -673,7 +843,7 @@ final class Controller {
 }
 ```
 
-The walker is syntactic — it reports what was written, using Swift's own capitalization
+The walker is syntactic: it reports what was written, using Swift's own capitalization
 convention to decide what reads as a type. A dotted chain's leading run of capitalized
 components is the type and the rest are members, so `DatabaseClient.shared.fetch()` is one
 static access on `DatabaseClient` and `Notification.Name.didChange` is one on
@@ -700,7 +870,7 @@ Each dependency carries a `TypeReference` describing how the type was written:
 let reference = dependency.reference          // TypeReference?
 reference?.baseName                           // "URL"
 reference?.qualifiedName                      // "Foundation.URL"
-reference?.moduleQualifier                    // "Foundation" — leftmost component
+reference?.moduleQualifier                    // "Foundation", the leftmost component
 reference?.genericArguments                   // nested references, e.g. Result<Data, Error>
 reference?.form                               // .plain, .optional, .array, .dictionary,
                                               // .function, .tuple, .existential, .opaque,
@@ -726,7 +896,7 @@ let scope = try Conformant.scope(directory: "Sources", policy: policy)
 
 Conformant compiles nothing, so it cannot know which `#if` branches are live. By default
 it reads **all** of them: both halves of an `#if canImport(UIKit) / #else` pair appear in
-the scope, even though no build ever has both. That is the safe direction — a rule that
+the scope, even though no build ever has both. That is the safe direction: a rule that
 checks a branch this build never compiles reports too much, and too much is visible,
 while a rule that never saw the branch it was written for passes silently.
 
@@ -749,7 +919,7 @@ let scope = try Conformant.scope(directory: "Sources", policy: policy)
 
 `os()`, `arch()`, `targetEnvironment()`, `canImport()`, `swift(>=)`, `compiler(>=)`,
 `-D` flags, `true`/`false`, `!`, `&&`, `||`, and parentheses are evaluated. Anything else
-— `hasFeature`, `hasAttribute`, `_endian`, and whatever Swift adds next — is undecided.
+(`hasFeature`, `hasAttribute`, `_endian`, and whatever Swift adds next) is undecided.
 
 Every field of `BuildConfiguration` is optional, and **a predicate the configuration
 cannot answer keeps its branch**, along with every branch below it. `os(iOS)` against a
@@ -758,20 +928,20 @@ can only ever drop code the build definitely excludes.
 
 `customFlags` is the one exception: a flag that is not listed reads as *unset* rather
 than unknown, because whoever writes the configuration knows the whole `-D` set just as
-the compiler does. A misspelled flag therefore drops code that should have been read —
-spell them the way the build does.
+the compiler does. A misspelled flag therefore drops code that should have been read,
+so spell them the way the build does.
 
 ### Ordering and determinism
 
-The same files produce the same output every run. Declarations come back in source order —
-by file path, then by line and column — rather than grouped by kind, and a declaration's
+The same files produce the same output every run. Declarations come back in source order
+(by file path, then by line and column) rather than grouped by kind, and a declaration's
 dependencies are ordered by where they were written and carry no duplicates. This matters
 most for [freezing rules](#using-freezing-rules-for-legacy-projects): a baseline is diffed
 against the next run, so an order that shifted between runs would read as a change nobody
 made.
 
-Files are parsed across all available cores. That is an implementation detail — the scope
-is assembled in path order regardless of which file finishes first — but it is the reason a
+Files are parsed across all available cores. That is an implementation detail, since the scope
+is assembled in path order regardless of which file finishes first, but it is the reason a
 large project scans in seconds rather than in minutes.
 
 ## Architecture Progress Reports

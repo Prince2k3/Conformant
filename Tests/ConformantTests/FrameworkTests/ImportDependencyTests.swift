@@ -207,8 +207,8 @@ final class ImportDependencyTests: XCTestCase {
 
     func testAModuleAndATypeOfTheSameNameResolveSeparately() throws {
         // Both dependencies are named "Domain": one is `import Domain`, the other is a
-        // property of type `Domain`. They resolve by different rules — module membership
-        // versus where the declaration lives — so answering one with the other would
+        // property of type `Domain`. They resolve by different rules (module membership
+        // versus where the declaration lives), so answering one with the other would
         // report a violation against whichever was looked up second.
         let directory = try makeDirectory([
             "Presentation/View.swift": "import Domain\nstruct UserView { let model: Domain }\n",

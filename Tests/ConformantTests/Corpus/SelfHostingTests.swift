@@ -27,8 +27,8 @@
 import XCTest
 @testable import Conformant
 
-/// Runs the parser over a large body of real Swift — the resolved swift-syntax
-/// checkout — rather than over hand-written fixtures.
+/// Runs the parser over a large body of real Swift, the resolved swift-syntax
+/// checkout, rather than over hand-written fixtures.
 ///
 /// The corpus fixtures pin *known* constructs. This pins the parser against code nobody
 /// wrote for it: hundreds of files using macros, generics, availability, and conditional
@@ -66,7 +66,7 @@ final class SelfHostingTests: XCTestCase {
     ///
     /// 1. Every file parses to completion without trapping.
     /// 2. No file reports a syntax error. swift-syntax's own sources compile, so an error
-    ///    here is a false positive — and false positives make `.strict` scopes unusable
+    ///    here is a false positive, and false positives make `.strict` scopes unusable
     ///    on real projects.
     /// 3. The run extracts a substantial number of declarations. A collector regression
     ///    that starts silently dropping declarations shows up as a collapsed count.

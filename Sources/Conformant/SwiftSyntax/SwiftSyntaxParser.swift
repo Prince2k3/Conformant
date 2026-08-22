@@ -77,7 +77,7 @@ public final class SwiftSyntaxParser: Sendable {
         let converter = SourceLocationConverter(fileName: canonicalPath, tree: sourceFile)
 
         let sink = DiagnosticSink()
-        // SwiftParser always returns a tree — invalid source yields error nodes rather
+        // SwiftParser always returns a tree: invalid source yields error nodes rather
         // than a failure. Without this check a truncated file would be extracted as if
         // it were complete, and the declarations it lost would look like clean code.
         collectSyntaxDiagnostics(in: sourceFile, converter: converter, path: canonicalPath, into: sink)

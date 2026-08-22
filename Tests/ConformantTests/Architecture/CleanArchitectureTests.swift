@@ -30,7 +30,7 @@ import XCTest
 /// inward. Entities know nothing, use cases know entities, adapters know use cases,
 /// frameworks know everything.
 ///
-/// The rule is not "layers should be tidy" — it is what lets the inner rings be compiled,
+/// The rule is not "layers should be tidy": it is what lets the inner rings be compiled,
 /// tested, and reasoned about without a database or a UI in the room. Each outward arrow
 /// below is a way that property is lost.
 final class CleanArchitectureTests: XCTestCase {
@@ -136,7 +136,7 @@ final class CleanArchitectureTests: XCTestCase {
         )
     }
 
-    /// The outermost ring is allowed to know every ring inside it — that is where wiring
+    /// The outermost ring is allowed to know every ring inside it, since that is where wiring
     /// lives. `AppAssembly` names one type from each, and none of it is a violation.
     func testTheOutermostRingMayNameEveryRingInsideIt() throws {
         let project = try makeApp()

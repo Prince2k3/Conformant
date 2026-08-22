@@ -29,9 +29,9 @@ import SwiftSyntax
 
 /// Decides which clauses of an `#if` a given build would compile.
 ///
-/// The answer is three-valued. A predicate the configuration does not describe — an
-/// unlisted `os`, a `canImport` with no module list, a form this evaluator does not
-/// understand — is *undecided*, and an undecided clause stays in the scope along with
+/// The answer is three-valued. A predicate the configuration does not describe, such as
+/// an unlisted `os`, a `canImport` with no module list, or a form this evaluator does
+/// not understand, is *undecided*, and an undecided clause stays in the scope along with
 /// every clause that follows it. Dropping a branch that might compile would hide
 /// declarations from every rule, and a rule with nothing to check passes.
 struct ConditionalCompilationEvaluator {
@@ -101,7 +101,7 @@ struct ConditionalCompilationEvaluator {
         return .undecided
     }
 
-    /// `&&` and `||` arrive unfolded — a flat list of operands and operators — because
+    /// `&&` and `||` arrive unfolded, as a flat list of operands and operators, because
     /// `#if` conditions are parsed without applying operator precedence. Group them the
     /// way Swift would: `&&` binds tighter than `||`.
     private func evaluate(_ sequence: SequenceExprSyntax) -> Answer {

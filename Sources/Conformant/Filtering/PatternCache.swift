@@ -28,9 +28,9 @@ import Foundation
 
 /// Compiled regexes, kept so that the same pattern is only built once.
 ///
-/// The patterns that filters and layer rules match against are written as arguments —
-/// `resideInPackage("..Networking..")`, `withName(matching: "^Mock")` — so they cannot be
-/// compiled where the rule is constructed. Without a cache, asking a thousand declarations
+/// The patterns that filters and layer rules match against are written as arguments,
+/// such as `resideInPackage("..Networking..")` or `withName(matching: "^Mock")`, so they
+/// cannot be compiled where the rule is constructed. Without a cache, asking a thousand declarations
 /// whether they reside in a package compiles the same pattern a thousand times, and
 /// compiling costs far more than matching.
 ///
@@ -39,7 +39,7 @@ import Foundation
 /// error travels back with the result rather than being swallowed here.
 ///
 /// Patterns come from rule and test source, so the cache holds one entry per pattern an
-/// author wrote — a bounded set that never grows during a run.
+/// author wrote, a bounded set that never grows during a run.
 enum PatternCache {
     private static let lock = NSLock()
     nonisolated(unsafe) private static var compiled: [String: Result<Regex<AnyRegexOutput>, any Error>] = [:]

@@ -34,7 +34,7 @@ import SwiftSyntax
 /// A signature says what a declaration promises; a body says what it actually depends on.
 /// `func run() { UserRepository().load() }` couples to `UserRepository` as firmly as a
 /// stored property would, and until this walker existed that coupling was invisible to
-/// every architecture rule — the most common form of real coupling was the one form
+/// every architecture rule: the most common form of real coupling was the one form
 /// Conformant could not see.
 ///
 /// The walker is syntactic. It reports what was written, using Swift's own naming
@@ -55,7 +55,7 @@ final class BodyDependencyCollector: SyntaxVisitor {
 
     private(set) var found: [Found] = []
 
-    /// Names bound by the enclosing declaration — its generic parameters, the
+    /// Names bound by the enclosing declaration: its generic parameters, the
     /// `associatedtype`s of its protocol, and `Self`. `T()` inside `func make<T>()` is
     /// not a dependency on anything.
     private let boundNames: Set<String>
@@ -95,7 +95,7 @@ final class BodyDependencyCollector: SyntaxVisitor {
     /// written type `Repository<User>` would.
     override func visit(_ node: GenericSpecializationExprSyntax) -> SyntaxVisitorContinueKind {
         for argument in node.genericArgumentClause.arguments {
-            // A value generic — the `3` in `Vector<3>` — writes an expression here and
+            // A value generic, the `3` in `Vector<3>`, writes an expression here and
             // names no type.
             guard case .type(let type) = argument.argument else { continue }
             record(type: type)
@@ -188,7 +188,7 @@ final class BodyDependencyCollector: SyntaxVisitor {
     // MARK: - Reading a dotted chain
 
     /// The identifiers a chain of member accesses spells, outermost last. `nil` when the
-    /// chain is rooted in something other than a plain name — a literal, a subscript, a
+    /// chain is rooted in something other than a plain name: a literal, a subscript, a
     /// call, or the implicit base of `.someCase`.
     private func components(of expression: ExprSyntax) -> [String]? {
         if let reference = expression.as(DeclReferenceExprSyntax.self) {

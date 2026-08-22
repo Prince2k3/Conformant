@@ -51,7 +51,7 @@ final class MVVMArchitectureTests: XCTestCase {
     }
 
     /// The rule the pattern exists for. A view model that names a view can only be
-    /// exercised by building one — which is to say, not in a unit test.
+    /// exercised by building one, which is to say, not in a unit test.
     func testAViewModelThatNamesAViewIsReported() throws {
         let project = try makeApp(injecting: "ViewModel/TaskDetailViewModel.swift", """
         public final class TaskDetailViewModel {
@@ -96,7 +96,7 @@ final class MVVMArchitectureTests: XCTestCase {
     }
 
     /// The model is the bottom of the stack: it knows neither of the layers above it. Here
-    /// the reach is an `import`, so nothing in the file names a view at all — which is
+    /// the reach is an `import`, so nothing in the file names a view at all, which is
     /// exactly the case a rule stated only over type names would miss. The violation is
     /// reported against the import itself, hence the module name on both sides.
     func testAModelThatImportsTheViewModuleIsReported() throws {

@@ -34,7 +34,7 @@ public struct ArchitectureRuleContext {
     let layers: [Layer]
 
     /// Resolved layers, keyed by kind as well as name. A module and a type can share a
-    /// name — `import Domain` and `struct Domain` — and they resolve by different rules,
+    /// name, as `import Domain` and `struct Domain` do, and they resolve by different rules,
     /// so a name-only key would answer one with the other.
     private struct CacheKey: Hashable {
         let name: String

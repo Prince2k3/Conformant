@@ -81,7 +81,7 @@ final class DeclarationDependencyTests: XCTestCase {
         XCTAssertTrue(deps.containsDependency(name: "String", kind: .typeUsage), "Should depend on String")
         XCTAssertTrue(deps.containsDependency(name: "TimeInterval", kind: .typeUsage), "Should depend on TimeInterval")
         // `URLRequest.CachePolicy` is one dependency, and it answers to its own name and
-        // to the trailing part of it — but not to the qualifier on its own.
+        // to the trailing part of it, but not to the qualifier on its own.
         XCTAssertTrue(deps.containsDependency(name: "URLRequest.CachePolicy", kind: .typeUsage))
         XCTAssertTrue(deps.containsDependency(name: "CachePolicy", kind: .typeUsage))
         XCTAssertFalse(deps.containsDependency(name: "URLRequest", kind: .typeUsage), "The source never named URLRequest by itself")
@@ -410,7 +410,7 @@ final class DeclarationDependencyTests: XCTestCase {
         }
 
         // Generic constraint. A bound on the enum's own type parameter is not a conformance
-        // the enum declares — it is a requirement it places on a caller's type.
+        // the enum declares; it is a requirement it places on a caller's type.
         XCTAssertTrue(statusEnum.dependencies.containsDependency(name: "Equatable", kind: .genericConstraint)) // From generic constraint T: Equatable
         // Raw Type
         XCTAssertTrue(statusEnum.dependencies.containsDependency(name: "String", kind: .typeUsage)) // From ': String' raw type

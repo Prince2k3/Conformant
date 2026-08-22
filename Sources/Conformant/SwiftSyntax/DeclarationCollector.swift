@@ -48,7 +48,7 @@ import SwiftParser
 /// function body is local to that call and is not part of the file's architecture.
 /// Conditional-compilation blocks are filtered only when the caller says which build to
 /// read for. By default every `#if` branch is collected, because the parser has no build
-/// configuration to evaluate them against — see `ScopePolicy.conditionalCompilation`.
+/// configuration to evaluate them against. See `ScopePolicy.conditionalCompilation`.
 final class DeclarationCollector {
     private let filePath: String
     private let converter: SourceLocationConverter
@@ -63,7 +63,7 @@ final class DeclarationCollector {
     /// See `ScopePolicy.conditionalCompilation`.
     private let conditionalCompilation: ScopePolicy.ConditionalCompilation
 
-    /// Type names bound by the declaration currently being walked — its generic
+    /// Type names bound by the declaration currently being walked: its generic
     /// parameters, the `associatedtype`s of the protocol it belongs to, and `Self`.
     /// A reference rooted at one of these names is a placeholder, not a dependency.
     private var boundNames: Set<String> = []
@@ -227,7 +227,7 @@ final class DeclarationCollector {
 
     // MARK: - Members
 
-    /// Collected members of one container. Nested types are *not* here — they are
+    /// Collected members of one container. Nested types are *not* here; they are
     /// appended to the file-level arrays as they are found, so their dependencies stay
     /// attached to themselves.
     private struct MemberSet {
@@ -553,8 +553,8 @@ final class DeclarationCollector {
         }
 
         // An import declaration depends on the module it names. Nothing else in the file
-        // records that, so without this every module-level layer rule — and every filter
-        // that asks for a dependency of kind `.import` — matched nothing at all.
+        // records that, so without this every module-level layer rule, and every filter
+        // that asks for a dependency of kind `.import`, matched nothing at all.
         let dependency = SwiftDependency(
             name: moduleName,
             kind: .import,
@@ -793,13 +793,13 @@ final class DeclarationCollector {
 
     /// The final dependency list of one declaration: no duplicates, in source order.
     ///
-    /// Collection walks a declaration in pieces — inheritance clause, generic constraints,
-    /// signature, body, members — so the raw list is grouped by where it was found and can
+    /// Collection walks a declaration in pieces (inheritance clause, generic constraints,
+    /// signature, body, members), so the raw list is grouped by where it was found and can
     /// name the same type at the same position twice (`[Int: Int]` reports `Int` once per
     /// side). Callers read this list, freeze it into baselines, and diff it between runs,
     /// so the same input has to produce the same list every time.
     ///
-    /// Two dependencies are the same when they agree on name, kind, and position — the key
+    /// Two dependencies are the same when they agree on name, kind, and position, which is the key
     /// `SwiftDependency` already hashes on. The first one wins, which keeps the written form
     /// recorded by whichever pass saw the type most precisely.
     ///
@@ -853,7 +853,7 @@ final class DeclarationCollector {
                 type = inferred
 
                 // With bodies read, the initializer is walked below and reports the same
-                // name with more precision — `.instantiation` for `HTTPClient()` rather
+                // name with more precision, `.instantiation` for `HTTPClient()` rather
                 // than a guess. Recording both would double every inferred property.
                 if dependencyDepth == .signatures {
                     dependencies.append(contentsOf: typeDependencies(
@@ -976,7 +976,7 @@ final class DeclarationCollector {
     ///
     /// Names bound in the current scope are already gone by the time the extractor
     /// returns; the standard library filter and de-duplication happen here. Two mentions
-    /// of the same type at the same location are one dependency — `(Int, Int)` is not a
+    /// of the same type at the same location are one dependency: `(Int, Int)` is not a
     /// double dependency on `Int`.
     private func typeDependencies(
         on type: TypeSyntax?,
@@ -991,7 +991,7 @@ final class DeclarationCollector {
         return deduplicated(extractor.references(in: type), kind: kind, at: location)
     }
 
-    /// Same, for a name recovered from an expression rather than a written type — there
+    /// Same, for a name recovered from an expression rather than a written type; there
     /// is no `TypeSyntax` to walk when the type comes from `let client = HTTPClient()`.
     private func typeDependencies(
         onInferredName name: String,
@@ -1089,7 +1089,7 @@ final class DeclarationCollector {
                 case .conformanceRequirement(let node):
                     append(node.rightType)
                 case .sameTypeRequirement(let node):
-                    // Either side can be a value since value generics — `where N == 3`
+                    // Either side can be a value since value generics: `where N == 3`
                     // constrains a count, and a value names no type.
                     if case .type(let left) = node.leftType { append(left) }
                     if case .type(let right) = node.rightType { append(right) }
@@ -1145,7 +1145,7 @@ final class DeclarationCollector {
         case .accessors(let list):
             return list.map { $0.accessorSpecifier.text }
         case .getter:
-            // `subscript(i: Int) -> T { expression }` — an implicit getter.
+            // `subscript(i: Int) -> T { expression }`, an implicit getter.
             return ["get"]
         }
     }

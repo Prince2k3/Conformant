@@ -34,7 +34,7 @@ import XCTest
 /// here against one fixed four-layer project, with a single file injected per test, so
 /// every reported violation has exactly one cause.
 ///
-/// The style suites — MVC, MVVM, Clean, DDD, VIPER, Hexagonal — describe whole
+/// The style suites (MVC, MVVM, Clean, DDD, VIPER, Hexagonal) describe whole
 /// architectures on top of these mechanics.
 final class LayerRuleTests: XCTestCase {
 
@@ -116,7 +116,7 @@ final class LayerRuleTests: XCTestCase {
         )
     }
 
-    /// A module is reached the moment a file imports it — provided the layer was told
+    /// A module is reached the moment a file imports it, provided the layer was told
     /// which modules are its own.
     func testAnImportOfAnotherLayersModuleIsReported() throws {
         XCTAssertEqual(

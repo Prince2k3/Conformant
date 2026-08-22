@@ -29,8 +29,8 @@ import Foundation
 /// A failure that prevented Conformant from building a trustworthy scope.
 ///
 /// Every case here was previously a `print` followed by carrying on with fewer files.
-/// That made the worst outcome — an empty scope, in which every architecture rule
-/// trivially passes — indistinguishable from a clean codebase.
+/// That made the worst outcome, an empty scope in which every architecture rule
+/// trivially passes, indistinguishable from a clean codebase.
 public enum ConformantError: Error, CustomStringConvertible {
 
     /// The path handed to a scope entry point does not exist.

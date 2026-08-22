@@ -103,7 +103,7 @@ extension Conformant {
     /// Evaluates architecture rules and reports every failure through `XCTFail`.
     ///
     /// Unlike ``Conformant/assertArchitecture(_:)``, which hands the outcome back as a
-    /// `Bool` for the caller to inspect, this fails the current test directly — including
+    /// `Bool` for the caller to inspect, this fails the current test directly, including
     /// when the scope is empty or holds files that did not parse.
     ///
     /// - Returns: Whether the scope was usable and all rules passed.

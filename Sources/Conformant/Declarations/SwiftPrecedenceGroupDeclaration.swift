@@ -35,7 +35,7 @@ public class SwiftPrecedenceGroupDeclaration: SwiftDeclaration {
     public let filePath: String
     public let location: SourceLocation
 
-    /// `left`, `right`, or `none` — `nil` when the group does not state one.
+    /// `left`, `right`, or `none`; `nil` when the group does not state one.
     public let associativity: String?
 
     /// `true` when the group declares `assignment: true`.

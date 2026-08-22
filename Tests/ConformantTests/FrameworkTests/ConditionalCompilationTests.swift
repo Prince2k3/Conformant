@@ -32,7 +32,7 @@ import SwiftSyntax
 /// `#if` branches, and which of them a scope reads.
 ///
 /// The default reads all of them. `.activeBranch(_:)` reads only the ones the described
-/// build compiles — and, crucially, keeps any branch whose condition the configuration
+/// build compiles and, crucially, keeps any branch whose condition the configuration
 /// cannot answer. Dropping a branch that might compile would hide declarations from
 /// every rule, and a rule with nothing to check passes.
 final class ConditionalCompilationTests: XCTestCase {
@@ -76,7 +76,7 @@ final class ConditionalCompilationTests: XCTestCase {
 
     func testAnUnanswerableConditionKeepsItsBranchAndTheOnesBelow() {
         // No module list, so `canImport` cannot be answered at all. Everything stays,
-        // which is the same as `.allBranches` — the safe direction.
+        // which is the same as `.allBranches`, the safe direction.
         let names = structNames(platformSource, BuildConfiguration(operatingSystem: "iOS"))
         XCTAssertEqual(names, ["DesktopView", "HeadlessView", "PlatformView"])
     }

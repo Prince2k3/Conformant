@@ -29,7 +29,7 @@ import Foundation
 /// Locates the on-disk corpus directories.
 ///
 /// The corpus is addressed through `#filePath` rather than `Bundle.module` because
-/// snapshots must be *writable* — re-recording (`CONFORMANT_RECORD=1`) rewrites the
+/// snapshots must be *writable*: re-recording (`CONFORMANT_RECORD=1`) rewrites the
 /// expectation files in the source tree, which a copied bundle resource cannot do.
 enum CorpusLocator {
     /// `Tests/ConformantTests/Corpus`
@@ -42,7 +42,7 @@ enum CorpusLocator {
     /// Recorded extraction snapshots, one `.txt` per fixture.
     static let expectations: URL = root.appendingPathComponent("Expectations")
 
-    /// The package root — `Corpus` sits three levels below it.
+    /// The package root. `Corpus` sits three levels below it.
     static let packageRoot: URL = root
         .deletingLastPathComponent()   // ConformantTests
         .deletingLastPathComponent()   // Tests

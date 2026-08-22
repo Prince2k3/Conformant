@@ -30,7 +30,7 @@ import XCTest
 /// that knows both sides.
 ///
 /// The rules are the ones the pattern is usually broken against. A view that reads the
-/// model, or a model that calls back into a controller, still compiles and still runs —
+/// model, or a model that calls back into a controller, still compiles and still runs,
 /// which is why the loss is invisible until the model is reused somewhere without a UI.
 final class MVCArchitectureTests: XCTestCase {
 
@@ -51,7 +51,7 @@ final class MVCArchitectureTests: XCTestCase {
     }
 
     /// The most common way MVC decays: a view that formats the model itself. It reads
-    /// harmlessly — one property — and it is the reason the view can no longer be
+    /// harmlessly, one property, and it is the reason the view can no longer be
     /// rendered from a preview, a test, or a second data source.
     func testAViewThatReadsTheModelIsReported() throws {
         let project = try makeApp(injecting: "Views/ArticleSummaryView.swift", """
@@ -94,7 +94,7 @@ final class MVCArchitectureTests: XCTestCase {
     }
 
     /// The model calling upwards. Cheap to write, and it makes the model unusable in any
-    /// context that has no controller — a background sync, a command-line importer.
+    /// context that has no controller: a background sync, a command-line importer.
     func testAModelThatCallsBackIntoAControllerIsReported() throws {
         let project = try makeApp(injecting: "Models/Draft.swift", """
         public struct Draft {

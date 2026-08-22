@@ -49,7 +49,7 @@ public struct SwiftDependency: Hashable {
     ///
     /// A qualified dependency answers to any suffix of its name that starts at a
     /// component boundary, so `Foundation.URL` matches both `Foundation.URL` and `URL`.
-    /// Equality is still exact — this is for rules and filters, which are written against
+    /// Equality is still exact; this is for rules and filters, which are written against
     /// the type name an author has in mind rather than the one the source happened to use.
     public func matches(_ name: String) -> Bool {
         if self.name == name { return true }

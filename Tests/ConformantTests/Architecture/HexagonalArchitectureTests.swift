@@ -26,7 +26,7 @@
 import XCTest
 @testable import Conformant
 
-/// Hexagonal architecture — ports and adapters. The application sits inside the hexagon
+/// Hexagonal architecture, ports and adapters. The application sits inside the hexagon
 /// and names only its ports; everything that talks to the world outside is an adapter
 /// plugged into one of them.
 ///
@@ -54,7 +54,7 @@ final class HexagonalArchitectureTests: XCTestCase {
         project.assertEveryLayerIsPopulated(layers.all)
     }
 
-    /// The inside of the hexagon reaching for a driven adapter. The service still works —
+    /// The inside of the hexagon reaching for a driven adapter. The service still works,
     /// against Postgres, and only against Postgres.
     func testTheDomainReachingForADrivenAdapterIsReported() throws {
         let project = try makeApp(injecting: "Domain/AuditLog.swift", """
@@ -97,7 +97,7 @@ final class HexagonalArchitectureTests: XCTestCase {
     }
 
     /// A port written against one particular adapter. A port that names its implementation
-    /// is no longer a port — the second adapter cannot be written.
+    /// is no longer a port: the second adapter cannot be written.
     func testAPortThatNamesAnAdapterIsReported() throws {
         let project = try makeApp(injecting: "Ports/Notifier.swift", """
         public protocol Notifier {

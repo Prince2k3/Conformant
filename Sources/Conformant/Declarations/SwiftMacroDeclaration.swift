@@ -38,7 +38,7 @@ public class SwiftMacroDeclaration: SwiftDeclaration {
     public let parameters: [SwiftParameterDeclaration]
     public let returnType: String?
 
-    /// The right-hand side of the macro, as written — for example
+    /// The right-hand side of the macro, as written, for example
     /// `#externalMacro(module: "MyMacros", type: "StringifyMacro")`.
     public let definition: String?
 

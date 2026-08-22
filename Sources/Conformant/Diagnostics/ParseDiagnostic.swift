@@ -55,7 +55,7 @@ public struct ParseDiagnostic: Hashable, Sendable {
         /// The file could not be read from disk.
         case unreadableFile
         /// A syntax node the extractor does not model yet. The declaration is still
-        /// produced, but some detail — an attribute argument, a type form — is missing.
+        /// produced, but some detail (an attribute argument, a type form) is missing.
         case unsupportedConstruct
     }
 
@@ -90,7 +90,7 @@ extension Sequence where Element == ParseDiagnostic {
         }
     }
 
-    /// A short, readable summary for failure messages — capped so a file with hundreds
+    /// A short, readable summary for failure messages, capped so a file with hundreds
     /// of cascading parse errors does not bury the actual problem.
     public func summary(limit: Int = 5) -> String {
         let all = sortedForReporting()

@@ -112,7 +112,7 @@ struct TypeReferenceExtractor {
 
         case .inlineArrayType(let node):
             // `[3 of Int]`. The count is a value, not a type, so only the element can
-            // name one — but both are written as generic arguments and `walk` already
+            // name one, but both are written as generic arguments and `walk` already
             // drops the value form, so asking for both costs nothing and keeps the
             // count's `[N of Int]` spelling, where `N` is a written name, visible.
             return walk(node.count.argument, form: .array) + walk(node.element.argument, form: .array)
@@ -137,7 +137,7 @@ struct TypeReferenceExtractor {
             return walk(node.constraint, form: isAny ? .existential : .opaque)
 
         case .namedOpaqueReturnType(let node):
-            // `<T> T` — the clause binds its own placeholders, which are not dependencies.
+            // `<T> T`: the clause binds its own placeholders, which are not dependencies.
             var inner = self
             inner.boundNames.formUnion(node.genericParameterClause.parameters.map(\.name.text))
             return inner.walk(node.type, form: .opaque)

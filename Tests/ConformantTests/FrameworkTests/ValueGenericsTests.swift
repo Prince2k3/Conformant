@@ -31,7 +31,7 @@ import XCTest
 /// in `Vector<3>`, the count of `[3 of Pixel]`, the right-hand side of `where N == 3`.
 ///
 /// A value is not something a file can depend on, so none of those positions may invent a
-/// dependency — and none of them may swallow the type written beside them either.
+/// dependency, and none of them may swallow the type written beside them either.
 final class ValueGenericsTests: XCTestCase {
 
     func testAValueGenericArgumentNamesNoType() throws {

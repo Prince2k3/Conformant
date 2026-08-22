@@ -31,11 +31,11 @@ public enum DependencyKind: Hashable {
     case conformance
     /// A type written down: a parameter, a return type, a property annotation, an alias.
     case typeUsage
-    /// A type constructed in a body — `UserRepository()`.
+    /// A type constructed in a body, as in `UserRepository()`.
     case instantiation
-    /// A static or class member reached in a body — `DatabaseClient.shared`.
+    /// A static or class member reached in a body, as in `DatabaseClient.shared`.
     case staticAccess
-    /// A bound on a generic parameter — the `Codable` in `func send<T: Codable>(_ value: T)`.
+    /// A bound on a generic parameter, the `Codable` in `func send<T: Codable>(_ value: T)`.
     case genericConstraint
     case `extension`
     case `import`
@@ -46,7 +46,7 @@ extension DependencyKind {
     /// layer reaches into another.
     ///
     /// `.extension` is the only exclusion: the extended type is the declaration's own
-    /// subject rather than something it reaches out to. `.import` counts — a module named
+    /// subject rather than something it reaches out to. `.import` counts: a module named
     /// by a layer is reached the moment a file in another layer imports it, and the import
     /// declaration is the declaration that reached for it.
     ///
