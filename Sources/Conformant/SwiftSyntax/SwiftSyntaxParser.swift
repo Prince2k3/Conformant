@@ -39,12 +39,17 @@ public class SwiftSyntaxParser {
     /// dependencies can only make an architecture rule easier to satisfy.
     private let ignoresStandardLibraryTypes: Bool
 
+    /// See `ScopePolicy.conditionalCompilation`. Every `#if` branch is read by default.
+    private let conditionalCompilation: ScopePolicy.ConditionalCompilation
+
     public init(
         dependencyDepth: ScopePolicy.DependencyDepth = .signaturesAndBodies,
-        ignoresStandardLibraryTypes: Bool = false
+        ignoresStandardLibraryTypes: Bool = false,
+        conditionalCompilation: ScopePolicy.ConditionalCompilation = .allBranches
     ) {
         self.dependencyDepth = dependencyDepth
         self.ignoresStandardLibraryTypes = ignoresStandardLibraryTypes
+        self.conditionalCompilation = conditionalCompilation
     }
 
     public func parseFile(path: String) throws -> SwiftFile {
@@ -78,7 +83,8 @@ public class SwiftSyntaxParser {
             converter: converter,
             diagnostics: sink,
             dependencyDepth: dependencyDepth,
-            ignoresStandardLibraryTypes: ignoresStandardLibraryTypes
+            ignoresStandardLibraryTypes: ignoresStandardLibraryTypes,
+            conditionalCompilation: conditionalCompilation
         )
         collector.collect(from: sourceFile)
         return collector.makeSwiftFile()

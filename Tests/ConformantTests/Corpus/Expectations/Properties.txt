@@ -7,7 +7,7 @@ fixture: Properties.swift
     submodules: []
     modifiers: []
     annotations: []
-    dependencies: []
+    dependencies: [SwiftUI/import@1:1]
 
 ## classes (0)
   <none>

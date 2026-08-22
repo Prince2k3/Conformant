@@ -7,7 +7,7 @@ fixture: Classes.swift
     submodules: []
     modifiers: []
     annotations: []
-    dependencies: []
+    dependencies: [Foundation/import@1:1]
 
 ## classes (2)
 - UserService @3:1

@@ -82,18 +82,51 @@ public struct ScopePolicy: Sendable {
     /// lists feed architecture rules.
     public var ignoresStandardLibraryTypes: Bool
 
+    /// Which branches of a `#if` a scope reads.
+    public enum ConditionalCompilation: Sendable {
+        /// Read every branch. Declarations that could never coexist in one build appear
+        /// side by side, and a rule sees all of them.
+        case allBranches
+        /// Read only the branches the described build would compile.
+        ///
+        /// A predicate the configuration does not answer keeps its branch, so this can
+        /// only ever drop code the build definitely excludes.
+        case activeBranch(BuildConfiguration)
+    }
+
+    /// Which `#if` branches contribute declarations. Defaults to `.allBranches`.
+    ///
+    /// Conformant compiles nothing, so it cannot know which branches are live unless it
+    /// is told. Reading all of them is the safe default: a rule that checked a branch
+    /// this build never compiles reports too much, and too much is visible, while a rule
+    /// that never saw the branch it was written for passes silently.
+    ///
+    /// Set `.activeBranch(_:)` when the duplicate declarations get in the way — an
+    /// `#if canImport(UIKit) / #else` pair of the same type, say — and state the build
+    /// you mean:
+    ///
+    /// ```swift
+    /// var policy = ScopePolicy.strict
+    /// policy.conditionalCompilation = .activeBranch(
+    ///     BuildConfiguration(operatingSystem: "iOS", importableModules: ["UIKit"])
+    /// )
+    /// ```
+    public var conditionalCompilation: ConditionalCompilation
+
     public init(
         onSyntaxError: Reaction = .fail,
         onUnreadableFile: Reaction = .fail,
         onEmptyScope: Reaction = .fail,
         dependencyDepth: DependencyDepth = .signaturesAndBodies,
-        ignoresStandardLibraryTypes: Bool = false
+        ignoresStandardLibraryTypes: Bool = false,
+        conditionalCompilation: ConditionalCompilation = .allBranches
     ) {
         self.onSyntaxError = onSyntaxError
         self.onUnreadableFile = onUnreadableFile
         self.onEmptyScope = onEmptyScope
         self.dependencyDepth = dependencyDepth
         self.ignoresStandardLibraryTypes = ignoresStandardLibraryTypes
+        self.conditionalCompilation = conditionalCompilation
     }
 
     /// Any problem fails the scope. The default, and the right choice inside a test suite.

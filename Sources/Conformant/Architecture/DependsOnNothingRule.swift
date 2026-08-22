@@ -45,7 +45,7 @@ public class DependsOnNothingRule: ArchitectureRule {
 
         for declaration in sourceDeclarations {
             for dependency in declaration.dependencies {
-                if !dependency.kind.couplesToType {
+                if !dependency.kind.isSubjectToLayerRules {
                     continue
                 }
 

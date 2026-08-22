@@ -42,21 +42,22 @@ public enum DependencyKind: Hashable {
 }
 
 extension DependencyKind {
-    /// Whether this kind couples the declaration to a named type, and so is subject to
-    /// layer rules.
+    /// Whether a layer rule should consider this dependency when deciding whether one
+    /// layer reaches into another.
     ///
-    /// `.import` is excluded because module rules match imports by module name, on their
-    /// own path. `.extension` is excluded because the extended type is the declaration's
-    /// own subject rather than something it reaches out to.
+    /// `.extension` is the only exclusion: the extended type is the declaration's own
+    /// subject rather than something it reaches out to. `.import` counts — a module named
+    /// by a layer is reached the moment a file in another layer imports it, and the import
+    /// declaration is the declaration that reached for it.
     ///
     /// The switch is exhaustive on purpose. A rule that quietly skipped a real dependency
     /// would pass while the coupling it was written to catch went unreported, so a new
     /// kind has to be classified here before it compiles.
-    public var couplesToType: Bool {
+    public var isSubjectToLayerRules: Bool {
         switch self {
-        case .import, .extension:
+        case .extension:
             return false
-        case .inheritance, .conformance, .typeUsage,
+        case .import, .inheritance, .conformance, .typeUsage,
              .instantiation, .staticAccess, .genericConstraint:
             return true
         }

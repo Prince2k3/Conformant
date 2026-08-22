@@ -33,7 +33,15 @@ public struct ArchitectureRuleContext {
     let declarations: [any SwiftDeclaration]
     let layers: [Layer]
 
-    private var typeToLayerCache: [String: Layer?] = [:]
+    /// Resolved layers, keyed by kind as well as name. A module and a type can share a
+    /// name — `import Domain` and `struct Domain` — and they resolve by different rules,
+    /// so a name-only key would answer one with the other.
+    private struct CacheKey: Hashable {
+        let name: String
+        let isModule: Bool
+    }
+
+    private var typeToLayerCache: [CacheKey: Layer?] = [:]
 
     init(scope: Conformant?, declarations: [any SwiftDeclaration], layers: [Layer]) {
         self.scope = scope
@@ -58,19 +66,20 @@ public struct ArchitectureRuleContext {
 
     /// Determine which layer a dependency belongs to
     mutating func layerContaining(dependency: SwiftDependency) -> Layer? {
-        if let cachedLayer = typeToLayerCache[dependency.name] {
+        let key = CacheKey(name: dependency.name, isModule: dependency.kind == .import)
+        if let cachedLayer = typeToLayerCache[key] {
             return cachedLayer
         }
 
         if dependency.kind == .import {
             for layer in layers {
                 if layer.containsDependency(dependency) {
-                    typeToLayerCache[dependency.name] = layer
+                    typeToLayerCache[key] = layer
                     return layer
                 }
             }
 
-            typeToLayerCache[dependency.name] = nil
+            typeToLayerCache[key] = nil
 
             return nil
         }
@@ -81,12 +90,12 @@ public struct ArchitectureRuleContext {
 
         for declaration in matchingDeclarations {
             if let layer = layerContaining(declaration: declaration) {
-                typeToLayerCache[dependency.name] = layer
+                typeToLayerCache[key] = layer
                 return layer
             }
         }
 
-        typeToLayerCache[dependency.name] = nil
+        typeToLayerCache[key] = nil
         return nil
     }
 

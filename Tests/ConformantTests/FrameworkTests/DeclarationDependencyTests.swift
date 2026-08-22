@@ -365,17 +365,15 @@ final class DeclarationDependencyTests: XCTestCase {
         XCTAssertEqual(classDependencies(source, depth: .signatures), ["Widget/typeUsage"])
     }
 
-    func testOnlyTypeCouplingKindsAreSubjectToLayerRules() {
+    func testLayerRulesConsiderEveryKindThatReachesOutward() {
         // Layer rules ask this question of every dependency, so a kind that answered wrongly
         // would make a rule pass over real coupling.
         for kind in [DependencyKind.inheritance, .conformance, .typeUsage,
-                     .instantiation, .staticAccess, .genericConstraint] {
-            XCTAssertTrue(kind.couplesToType, "\(kind) names a type the declaration reaches for")
+                     .instantiation, .staticAccess, .genericConstraint, .import] {
+            XCTAssertTrue(kind.isSubjectToLayerRules, "\(kind) reaches for something outside the declaration")
         }
-        // Imports are matched by module name on their own path, and an extension's subject is
-        // the declaration itself rather than something it reaches out to.
-        XCTAssertFalse(DependencyKind.import.couplesToType)
-        XCTAssertFalse(DependencyKind.extension.couplesToType)
+        // An extension's subject is the declaration itself, not something it reaches out to.
+        XCTAssertFalse(DependencyKind.extension.isSubjectToLayerRules)
     }
 
     func testComplexTypeDependencies() throws {

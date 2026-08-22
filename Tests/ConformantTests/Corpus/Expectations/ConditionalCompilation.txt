@@ -7,14 +7,14 @@ fixture: ConditionalCompilation.swift
     submodules: []
     modifiers: []
     annotations: []
-    dependencies: []
+    dependencies: [UIKit/import@2:1]
 - AppKit @5:1
     kind: regular
     fullPath: AppKit
     submodules: []
     modifiers: []
     annotations: []
-    dependencies: []
+    dependencies: [AppKit/import@5:1]
 
 ## classes (3)
 - PlatformView @3:1

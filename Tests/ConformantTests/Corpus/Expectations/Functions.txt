@@ -7,7 +7,7 @@ fixture: Functions.swift
     submodules: []
     modifiers: []
     annotations: []
-    dependencies: []
+    dependencies: [Foundation/import@1:1]
 
 ## classes (0)
   <none>

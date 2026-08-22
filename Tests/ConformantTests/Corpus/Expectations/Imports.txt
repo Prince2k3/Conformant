@@ -7,42 +7,42 @@ fixture: Imports.swift
     submodules: []
     modifiers: []
     annotations: []
-    dependencies: []
+    dependencies: [Foundation/import@1:1]
 - SwiftUI @2:1
     kind: typeOnly
     fullPath: SwiftUI.Color
     submodules: [Color]
     modifiers: []
     annotations: []
-    dependencies: []
+    dependencies: [SwiftUI/import@2:1]
 - UIKit @3:1
     kind: typeOnly
     fullPath: UIKit.UIView
     submodules: [UIView]
     modifiers: []
     annotations: []
-    dependencies: []
+    dependencies: [UIKit/import@3:1]
 - MyModule @4:1
     kind: regular
     fullPath: MyModule
     submodules: []
     modifiers: []
     annotations: [@testable]
-    dependencies: []
+    dependencies: [MyModule/import@4:1]
 - Shared @5:1
     kind: regular
     fullPath: Shared
     submodules: []
     modifiers: []
     annotations: [@_exported]
-    dependencies: []
+    dependencies: [Shared/import@5:1]
 - Deep @6:1
     kind: component
     fullPath: Deep.Nested.Module
     submodules: [Nested, Module]
     modifiers: []
     annotations: []
-    dependencies: []
+    dependencies: [Deep/import@6:1]
 
 ## classes (0)
   <none>

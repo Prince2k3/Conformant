@@ -46,8 +46,9 @@ import SwiftParser
 ///
 /// Traversal deliberately stops at function and accessor bodies: a type declared inside a
 /// function body is local to that call and is not part of the file's architecture.
-/// Conditional-compilation blocks are *not* filtered — every `#if` branch is collected,
-/// because the parser has no build configuration to evaluate them against.
+/// Conditional-compilation blocks are filtered only when the caller says which build to
+/// read for. By default every `#if` branch is collected, because the parser has no build
+/// configuration to evaluate them against — see `ScopePolicy.conditionalCompilation`.
 final class DeclarationCollector {
     private let filePath: String
     private let converter: SourceLocationConverter
@@ -58,6 +59,9 @@ final class DeclarationCollector {
 
     /// See `ScopePolicy.ignoresStandardLibraryTypes`.
     private let ignoresStandardLibraryTypes: Bool
+
+    /// See `ScopePolicy.conditionalCompilation`.
+    private let conditionalCompilation: ScopePolicy.ConditionalCompilation
 
     /// Type names bound by the declaration currently being walked — its generic
     /// parameters, the `associatedtype`s of the protocol it belongs to, and `Self`.
@@ -83,13 +87,27 @@ final class DeclarationCollector {
         converter: SourceLocationConverter,
         diagnostics: DiagnosticSink,
         dependencyDepth: ScopePolicy.DependencyDepth = .signaturesAndBodies,
-        ignoresStandardLibraryTypes: Bool = false
+        ignoresStandardLibraryTypes: Bool = false,
+        conditionalCompilation: ScopePolicy.ConditionalCompilation = .allBranches
     ) {
         self.filePath = filePath
         self.converter = converter
         self.diagnostics = diagnostics
         self.dependencyDepth = dependencyDepth
         self.ignoresStandardLibraryTypes = ignoresStandardLibraryTypes
+        self.conditionalCompilation = conditionalCompilation
+    }
+
+    /// The clauses of an `#if` whose declarations belong in the scope.
+    ///
+    /// Under `.allBranches` this is every clause, including the `#else`: declarations
+    /// that could never coexist in one build are all collected, which is the safe
+    /// direction for a rule to read.
+    private func activeClauses(of node: IfConfigDeclSyntax) -> [IfConfigClauseSyntax] {
+        guard case .activeBranch(let configuration) = conditionalCompilation else {
+            return Array(node.clauses)
+        }
+        return ConditionalCompilationEvaluator(configuration: configuration).activeClauses(of: node)
     }
 
     /// Runs `body` with `names` added to the bound set, then restores it. Nesting is
@@ -150,7 +168,7 @@ final class DeclarationCollector {
         case .importDecl(let node):
             imports.append(makeImport(node))
         case .ifConfigDecl(let node):
-            for clause in node.clauses {
+            for clause in activeClauses(of: node) {
                 switch clause.elements {
                 case .statements(let statements): collect(statements: statements)
                 case .decls(let members):
@@ -263,7 +281,7 @@ final class DeclarationCollector {
             case .enumCaseDecl(let node):
                 appendCases(from: node, into: &collected)
             case .ifConfigDecl(let node):
-                for clause in node.clauses {
+                for clause in activeClauses(of: node) {
                     switch clause.elements {
                     case .decls(let nested):
                         collectMembers(nested, into: &collected, owner: owner)
@@ -534,11 +552,20 @@ final class DeclarationCollector {
             kind = .regular
         }
 
+        // An import declaration depends on the module it names. Nothing else in the file
+        // records that, so without this every module-level layer rule — and every filter
+        // that asks for a dependency of kind `.import` — matched nothing at all.
+        let dependency = SwiftDependency(
+            name: moduleName,
+            kind: .import,
+            location: location(of: Syntax(node))
+        )
+
         return SwiftImportDeclaration(
             name: moduleName,
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: [],
+            dependencies: moduleName.isEmpty ? [] : [dependency],
             filePath: filePath,
             location: location(of: Syntax(node)),
             kind: kind,
@@ -884,7 +911,7 @@ final class DeclarationCollector {
                 case .associatedTypeDecl(let node):
                     names.insert(node.name.text)
                 case .ifConfigDecl(let node):
-                    for clause in node.clauses {
+                    for clause in activeClauses(of: node) {
                         if case .decls(let nested) = clause.elements { scan(nested) }
                     }
                 default:

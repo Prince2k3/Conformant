@@ -6,12 +6,13 @@ Conformant is a tool that leverages Swift’s [swift-syntax](https://github.com/
 
 - **Complete Declaration Coverage**: Every form in the Swift grammar is extracted — classes, structs, enums, protocols, actors, extensions, typealiases, functions, properties, initializers, deinitializers, subscripts, associated types, macros, operators, and precedence groups. Nested types are collected in their own right, under a qualified name (`Outer.Inner`).
 - **Architectural Rules**: Define and enforce architectural boundaries between different layers of your application.
-- **Import Analysis**: Track and verify import dependencies between modules.
+- **Import Analysis**: Track and verify import dependencies between modules. An `import` carries a dependency on the module it names, so a layer defined by module is reached the moment another layer imports it.
 - **Dependency Tracking**: Analyze type dependencies across your entire codebase — signatures *and* bodies, so a type constructed inside a method is as visible to a layer rule as a stored property is.
 - **Freezing Rules**: Record existing violations and only report new ones to support gradual architectural improvement.
 - **Custom Assertions**: Create custom code quality rules as unit tests.
 - **XCTest Integration**: Run consistency checks as part of your test suite.
 - **Flexible Layer Definitions**: Define architectural layers using directories, modules, or custom predicates.
+- **Stated Build Configuration**: Read every `#if` branch by default, or name the build you mean and read only the branches it compiles.
 
 ## Installation
 
@@ -83,8 +84,9 @@ Individual reactions can be mixed:
 let policy = ScopePolicy(onSyntaxError: .warn, onUnreadableFile: .fail, onEmptyScope: .fail)
 ```
 
-`ScopePolicy` also carries `dependencyDepth` and `ignoresStandardLibraryTypes` — see
-[Dependency Analysis](#dependency-analysis).
+`ScopePolicy` also carries `dependencyDepth`, `ignoresStandardLibraryTypes`, and
+`conditionalCompilation` — see [Dependency Analysis](#dependency-analysis) and
+[Conditional compilation](#conditional-compilation).
 
 ### Basic Code Structure Validation
 
@@ -284,13 +286,35 @@ let networkLayer = Layer(name: "Network", predicate: { decl in
 
 ### By Module Name
 
-```swift
-// Layer representing all imports of the "NetworkingModule"
-let networking = Layer(name: "Networking", module: "NetworkingModule")
+A layer can be named by the modules that belong to it. `import Networking` is then a
+dependency on that layer, reported against the import declaration at its own line:
 
-// Layer representing multiple modules
-let uiModules = Layer(name: "UI", modules: ["UIKit", "SwiftUI"])
+```swift
+// A package target names both a module and the directory its sources live in
+let networking = Layer(name: "Networking", packageTarget: "NetworkingModule")
+
+// Several targets in one layer
+let uiModules = Layer(name: "UI", packageTargets: ["MyAppUI", "MyAppComponents"])
+
+// Modules that are not targets of this package — a framework, say — with a predicate
+// deciding which declarations *reside* in the layer
+let platform = Layer(name: "Platform", modules: ["UIKit", "SwiftUI"]) { _ in false }
 ```
+
+```swift
+scope.assertArchitecture { rules in
+    let domain = Layer(name: "Domain", directory: "Domain")
+    let persistence = Layer(name: "Persistence", modules: ["Persistence"]) { _ in false }
+    rules.defineLayer(domain)
+    rules.defineLayer(persistence)
+    // Fails on `import Persistence` anywhere under Domain/
+    rules.add(domain.mustNotDependOn(persistence))
+}
+```
+
+`import Deep.Nested.Module` depends on `Deep`: a layer is defined by module names, and
+the rest of the path is inside the module. The submodule components are still available
+on the declaration as `submodules`.
 
 ### By Custom Predicate
 
@@ -603,10 +627,9 @@ needs to be:
 | `.extension` | `extension Array` — the type being extended |
 | `.import` | `import Foundation` |
 
-`kind.couplesToType` answers whether a kind names a type the declaration reaches out to,
-and is what the layer rules ask of each dependency. Every kind above is `true` except
-`.import`, which module rules match by name on their own path, and `.extension`, whose
-subject is the declaration itself.
+`kind.isSubjectToLayerRules` is what the layer rules ask of each dependency. Every kind
+above is `true` except `.extension`, whose subject is the declaration itself rather than
+something it reaches out to.
 
 ### Signatures and bodies
 
@@ -671,6 +694,45 @@ var policy = ScopePolicy.strict
 policy.ignoresStandardLibraryTypes = true
 let scope = try Conformant.scope(directory: "Sources", policy: policy)
 ```
+
+### Conditional compilation
+
+Conformant compiles nothing, so it cannot know which `#if` branches are live. By default
+it reads **all** of them: both halves of an `#if canImport(UIKit) / #else` pair appear in
+the scope, even though no build ever has both. That is the safe direction — a rule that
+checks a branch this build never compiles reports too much, and too much is visible,
+while a rule that never saw the branch it was written for passes silently.
+
+When the duplicates get in the way, state the build you mean:
+
+```swift
+var policy = ScopePolicy.strict
+policy.conditionalCompilation = .activeBranch(
+    BuildConfiguration(
+        operatingSystem: "iOS",
+        architecture: "arm64",
+        targetEnvironment: "simulator",
+        swiftVersion: "6.0",
+        customFlags: ["DEBUG"],
+        importableModules: ["UIKit", "Foundation"]
+    )
+)
+let scope = try Conformant.scope(directory: "Sources", policy: policy)
+```
+
+`os()`, `arch()`, `targetEnvironment()`, `canImport()`, `swift(>=)`, `compiler(>=)`,
+`-D` flags, `true`/`false`, `!`, `&&`, `||`, and parentheses are evaluated. Anything else
+— `hasFeature`, `hasAttribute`, `_endian`, and whatever Swift adds next — is undecided.
+
+Every field of `BuildConfiguration` is optional, and **a predicate the configuration
+cannot answer keeps its branch**, along with every branch below it. `os(iOS)` against a
+configuration with no `operatingSystem` is undecided, not false. So `.activeBranch(_:)`
+can only ever drop code the build definitely excludes.
+
+`customFlags` is the one exception: a flag that is not listed reads as *unset* rather
+than unknown, because whoever writes the configuration knows the whole `-D` set just as
+the compiler does. A misspelled flag therefore drops code that should have been read —
+spell them the way the build does.
 
 ## Architecture Progress Reports
 
