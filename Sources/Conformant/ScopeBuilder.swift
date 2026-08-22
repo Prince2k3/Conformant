@@ -133,31 +133,21 @@ struct ScopeBuilder {
     // MARK: - Parsing
 
     private func parse(_ urls: [URL]) throws -> Result {
-        let parser = SwiftSyntaxParser(
-            dependencyDepth: policy.dependencyDepth,
-            ignoresStandardLibraryTypes: policy.ignoresStandardLibraryTypes,
-            conditionalCompilation: policy.conditionalCompilation
-        )
         var files: [SwiftFile] = []
         var diagnostics: [ParseDiagnostic] = []
 
-        for url in urls {
-            let file: SwiftFile
-            do {
-                file = try parser.parseFile(path: url.path)
-            } catch let error as ConformantError {
+        // Reading the outcomes back in URL order, on one thread, is what keeps the scope
+        // reproducible: the same directory yields the same files in the same order, and a
+        // policy set to `.fail` throws on the first failing file rather than on whichever
+        // one happened to finish first.
+        for outcome in parseInParallel(urls) {
+            switch outcome {
+            case .parsed(let file):
+                files.append(file)
+                diagnostics.append(contentsOf: file.diagnostics)
+            case .failed(let error):
                 _ = try react(to: error, policy.onUnreadableFile).map { diagnostics.append(contentsOf: $0.diagnostics) }
-                continue
-            } catch {
-                _ = try react(
-                    to: .fileNotReadable(path: url.path, underlying: error),
-                    policy.onUnreadableFile
-                ).map { diagnostics.append(contentsOf: $0.diagnostics) }
-                continue
             }
-
-            files.append(file)
-            diagnostics.append(contentsOf: file.diagnostics)
         }
 
         let syntaxErrors = diagnostics.errors.filter { $0.category == .syntaxError }
@@ -169,6 +159,58 @@ struct ScopeBuilder {
         }
 
         return Result(files: files, diagnostics: diagnostics)
+    }
+
+    /// What reading and parsing one file produced. Failures are carried rather than thrown
+    /// so that the policy — which may turn a failure into a diagnostic, or into nothing —
+    /// is applied once, in order, after every file has been read.
+    private enum Outcome {
+        case parsed(SwiftFile)
+        case failed(ConformantError)
+    }
+
+    /// Parses every file across the available cores and returns the outcomes in the order
+    /// the URLs were given.
+    ///
+    /// Parsing is the expensive part of building a scope and each file is independent of
+    /// every other, so a large project has no reason to read them one at a time. The work
+    /// stays synchronous: making it `async` would push `Conformant.scope(...)` — and every
+    /// test that calls it — into an async context for no gain.
+    ///
+    /// Each iteration writes to its own index and reads nothing another iteration writes,
+    /// so the buffer needs no lock. `SwiftSyntaxParser` holds only its configuration and
+    /// builds a fresh collector per file, so one instance serves them all.
+    private func parseInParallel(_ urls: [URL]) -> [Outcome] {
+        let parser = SwiftSyntaxParser(
+            dependencyDepth: policy.dependencyDepth,
+            ignoresStandardLibraryTypes: policy.ignoresStandardLibraryTypes,
+            conditionalCompilation: policy.conditionalCompilation
+        )
+
+        // Handing a single file to the scheduler costs more than parsing it.
+        guard urls.count > 1 else {
+            return urls.map { parse($0, with: parser) }
+        }
+
+        return [Outcome](unsafeUninitializedCapacity: urls.count) { buffer, initialized in
+            // Each iteration initialises its own element and reads no other, so sharing
+            // the base address across threads is safe; the compiler cannot see that.
+            nonisolated(unsafe) let base = buffer.baseAddress!
+            DispatchQueue.concurrentPerform(iterations: urls.count) { index in
+                (base + index).initialize(to: parse(urls[index], with: parser))
+            }
+            initialized = urls.count
+        }
+    }
+
+    private func parse(_ url: URL, with parser: SwiftSyntaxParser) -> Outcome {
+        do {
+            return .parsed(try parser.parseFile(path: url.path))
+        } catch let error as ConformantError {
+            return .failed(error)
+        } catch {
+            return .failed(.fileNotReadable(path: url.path, underlying: error))
+        }
     }
 
     // MARK: - Policy

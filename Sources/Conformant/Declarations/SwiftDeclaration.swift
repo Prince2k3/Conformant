@@ -71,13 +71,18 @@ extension SwiftDeclaration {
         modifiers.contains(modifier)
     }
 
+    /// Whether this declaration's file path matches `packagePattern`.
+    ///
+    /// The pattern is a regular expression, with `..` standing in for "any run of
+    /// characters" so that `"..Networking.."` reads as a path segment rather than as regex
+    /// punctuation.
     public func resideInPackage(_ packagePattern: String) -> Bool {
         let regexPattern = packagePattern.replacingOccurrences(of: "..", with: ".*")
 
-        do {
-            let regex = try Regex(regexPattern)
+        switch PatternCache.compile(regexPattern) {
+        case .success(let regex):
             return filePath.contains(regex)
-        } catch {
+        case .failure(let error):
             print("Invalid regex pattern: \(regexPattern) - \(error)")
             return false
         }

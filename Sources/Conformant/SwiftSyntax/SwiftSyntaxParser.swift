@@ -30,7 +30,11 @@ import SwiftParser
 import SwiftParserDiagnostics
 
 /// Parser that uses SwiftSyntax to extract declarations from Swift files
-public class SwiftSyntaxParser {
+///
+/// One instance can parse many files at once: it holds nothing but its configuration and
+/// builds a fresh collector for every file, so `ScopeBuilder` shares a single parser
+/// across all the cores it uses.
+public final class SwiftSyntaxParser: Sendable {
 
     /// See `ScopePolicy.dependencyDepth`.
     private let dependencyDepth: ScopePolicy.DependencyDepth

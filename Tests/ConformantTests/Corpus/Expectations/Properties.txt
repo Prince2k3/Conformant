@@ -17,7 +17,7 @@ fixture: Properties.swift
     protocols: []
     modifiers: []
     annotations: []
-    dependencies: [ExpensiveResource/instantiation/plain@12:45, ExpensiveResource/typeUsage/plain@12:25, Int/typeUsage/plain@11:17, Int/typeUsage/plain@11:17, Int/typeUsage/plain@16:19, Int/typeUsage/plain@17:24, Item/typeUsage/array@8:27, Owner/typeUsage/plain@14:24, SomeDelegate/typeUsage/optional@13:24, String/typeUsage/plain@11:30]
+    dependencies: [ExpensiveResource/instantiation/plain@12:45, ExpensiveResource/typeUsage/plain@12:25, Int/typeUsage/plain@11:17, Int/typeUsage/plain@16:19, Int/typeUsage/plain@17:24, Item/typeUsage/array@8:27, Owner/typeUsage/plain@14:24, SomeDelegate/typeUsage/optional@13:24, String/typeUsage/plain@11:30]
     properties:
       - locale: Any @7:40
           computed: false
@@ -48,7 +48,7 @@ fixture: Properties.swift
           initialValue: <none>
           modifiers: []
           annotations: []
-          dependencies: [Int/typeUsage/plain@11:17, String/typeUsage/plain@11:30]
+          dependencies: [String/typeUsage/plain@11:30]
       - expensive: ExpensiveResource @12:14
           computed: false
           initialValue: ExpensiveResource()

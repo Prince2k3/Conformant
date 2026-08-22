@@ -316,6 +316,33 @@ scope.assertArchitecture { rules in
 the rest of the path is inside the module. The submodule components are still available
 on the declaration as `submodules`.
 
+### By File Path Pattern
+
+A layer can be named by where its files live. `identifierPattern` is a regular expression
+matched against the full path of each declaration's file:
+
+```swift
+let domain = Layer(name: "Domain", identifierPattern: "/Sources/AppDomain/.*\\.swift")
+```
+
+Inside these patterns `..` is shorthand for "any run of characters", so a path segment can
+be written without regex punctuation:
+
+```swift
+// Every file with "Networking" anywhere in its path
+let networking = Layer(name: "Networking", identifierPattern: "..Networking..")
+```
+
+The same shorthand applies to `resideInPackage(_:)`, which asks the question of a single
+declaration:
+
+```swift
+let misplaced = scope.classes().filter { $0.resideInPackage("..Domain..") }
+```
+
+A pattern that is not a valid regular expression is reported on standard output and
+matches nothing, rather than failing the run.
+
 ### By Custom Predicate
 
 ```swift
@@ -733,6 +760,19 @@ can only ever drop code the build definitely excludes.
 than unknown, because whoever writes the configuration knows the whole `-D` set just as
 the compiler does. A misspelled flag therefore drops code that should have been read —
 spell them the way the build does.
+
+### Ordering and determinism
+
+The same files produce the same output every run. Declarations come back in source order —
+by file path, then by line and column — rather than grouped by kind, and a declaration's
+dependencies are ordered by where they were written and carry no duplicates. This matters
+most for [freezing rules](#using-freezing-rules-for-legacy-projects): a baseline is diffed
+against the next run, so an order that shifted between runs would read as a change nobody
+made.
+
+Files are parsed across all available cores. That is an implementation detail — the scope
+is assembled in path order regardless of which file finishes first — but it is the reason a
+large project scans in seconds rather than in minutes.
 
 ## Architecture Progress Reports
 

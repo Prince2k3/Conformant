@@ -337,7 +337,7 @@ final class DeclarationCollector {
             name: name,
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: dependencies,
+            dependencies: finalize(dependencies),
             filePath: filePath,
             location: location(of: Syntax(node)),
             superClass: superClass,
@@ -368,7 +368,7 @@ final class DeclarationCollector {
             name: name,
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: dependencies,
+            dependencies: finalize(dependencies),
             filePath: filePath,
             location: location(of: Syntax(node)),
             protocols: protocolNames,
@@ -398,7 +398,7 @@ final class DeclarationCollector {
             name: name,
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: dependencies,
+            dependencies: finalize(dependencies),
             filePath: filePath,
             location: location(of: Syntax(node)),
             protocols: protocolNames,
@@ -451,7 +451,7 @@ final class DeclarationCollector {
             name: name,
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: dependencies,
+            dependencies: finalize(dependencies),
             filePath: filePath,
             location: location(of: Syntax(node)),
             cases: members.cases,
@@ -482,7 +482,7 @@ final class DeclarationCollector {
             name: name,
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: dependencies,
+            dependencies: finalize(dependencies),
             filePath: filePath,
             location: location(of: Syntax(node)),
             inheritedProtocols: inherited,
@@ -519,7 +519,7 @@ final class DeclarationCollector {
             name: name,
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: dependencies,
+            dependencies: finalize(dependencies),
             filePath: filePath,
             location: location(of: Syntax(node)),
             properties: members.properties,
@@ -585,7 +585,7 @@ final class DeclarationCollector {
             name: node.name.text,
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: dependencies,
+            dependencies: finalize(dependencies),
             filePath: filePath,
             location: location(of: Syntax(node)),
             parameters: parameters(parameterList),
@@ -601,11 +601,11 @@ final class DeclarationCollector {
             name: "init",
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: binding(scopeNames(node.genericParameterClause)) {
+            dependencies: finalize(binding(scopeNames(node.genericParameterClause)) {
                 genericConstraints(node.genericParameterClause, node.genericWhereClause)
                     + signatureDependencies(of: node.signature)
                     + bodyDependencies(in: node.body)
-            },
+            }),
             filePath: filePath,
             location: location(of: Syntax(node)),
             parameters: parameters(node.signature.parameterClause.parameters),
@@ -620,7 +620,7 @@ final class DeclarationCollector {
         SwiftDeinitializerDeclaration(
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: bodyDependencies(in: node.body),
+            dependencies: finalize(bodyDependencies(in: node.body)),
             filePath: filePath,
             location: location(of: Syntax(node)),
             body: node.body?.trimmedDescription,
@@ -657,7 +657,7 @@ final class DeclarationCollector {
         return SwiftSubscriptDeclaration(
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: dependencies,
+            dependencies: finalize(dependencies),
             filePath: filePath,
             location: location(of: Syntax(node)),
             parameters: parameters(parameterList),
@@ -685,7 +685,7 @@ final class DeclarationCollector {
             name: node.name.text,
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: dependencies,
+            dependencies: finalize(dependencies),
             filePath: filePath,
             location: location(of: Syntax(node)),
             inheritedTypes: inherited,
@@ -712,7 +712,7 @@ final class DeclarationCollector {
             name: qualify(node.name.text, in: parent),
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: dependencies,
+            dependencies: finalize(dependencies),
             filePath: filePath,
             location: location(of: Syntax(node)),
             aliasedType: aliasedType,
@@ -726,10 +726,10 @@ final class DeclarationCollector {
             name: qualify(node.name.text, in: parent),
             modifiers: modifiers(node.modifiers),
             annotations: annotations(node.attributes),
-            dependencies: binding(scopeNames(node.genericParameterClause)) {
+            dependencies: finalize(binding(scopeNames(node.genericParameterClause)) {
                 genericConstraints(node.genericParameterClause, node.genericWhereClause)
                     + signatureDependencies(of: node.signature)
-            },
+            }),
             filePath: filePath,
             location: location(of: Syntax(node)),
             parameters: parameters(node.signature.parameterClause.parameters),
@@ -791,16 +791,48 @@ final class DeclarationCollector {
         )
     }
 
+    /// The final dependency list of one declaration: no duplicates, in source order.
+    ///
+    /// Collection walks a declaration in pieces — inheritance clause, generic constraints,
+    /// signature, body, members — so the raw list is grouped by where it was found and can
+    /// name the same type at the same position twice (`[Int: Int]` reports `Int` once per
+    /// side). Callers read this list, freeze it into baselines, and diff it between runs,
+    /// so the same input has to produce the same list every time.
+    ///
+    /// Two dependencies are the same when they agree on name, kind, and position — the key
+    /// `SwiftDependency` already hashes on. The first one wins, which keeps the written form
+    /// recorded by whichever pass saw the type most precisely.
+    ///
+    /// Everything a single written type contributes shares that type's position, so the sort
+    /// falls back to the order the walker produced rather than to the name: `Result<T, E>`
+    /// reads outside in, and alphabetising it would throw that structure away. Sorting on the
+    /// index makes the fallback explicit instead of relying on `sorted(by:)` being stable.
+    private func finalize(_ dependencies: [SwiftDependency]) -> [SwiftDependency] {
+        var seen = Set<SwiftDependency>()
+        var unique: [(index: Int, dependency: SwiftDependency)] = []
+        unique.reserveCapacity(dependencies.count)
+        for dependency in dependencies where seen.insert(dependency).inserted {
+            unique.append((unique.count, dependency))
+        }
+        return unique.sorted { lhs, rhs in
+            let left = lhs.dependency.location, right = rhs.dependency.location
+            if left.line != right.line { return left.line < right.line }
+            if left.column != right.column { return left.column < right.column }
+            return lhs.index < rhs.index
+        }.map(\.dependency)
+    }
+
     private func makeProperties(_ node: VariableDeclSyntax, parent: String?) -> [SwiftPropertyDeclaration] {
         let declModifiers = modifiers(node.modifiers)
         let declAnnotations = annotations(node.attributes)
-        var dependencies: [SwiftDependency] = []
         var properties: [SwiftPropertyDeclaration] = []
 
         for binding in node.bindings {
             // Destructuring patterns (`let (a, b) = pair`) name no single property.
             guard let pattern = binding.pattern.as(IdentifierPatternSyntax.self) else { continue }
 
+            // One list per binding: in `let a: Int, b: String`, `b` must not inherit `Int`.
+            var dependencies: [SwiftDependency] = []
             var type = "Any"
 
             if let typeAnnotation = binding.typeAnnotation {
@@ -839,7 +871,7 @@ final class DeclarationCollector {
                 name: pattern.identifier.text,
                 modifiers: declModifiers,
                 annotations: declAnnotations,
-                dependencies: dependencies,
+                dependencies: finalize(dependencies),
                 filePath: filePath,
                 location: location(of: Syntax(pattern)),
                 type: type,

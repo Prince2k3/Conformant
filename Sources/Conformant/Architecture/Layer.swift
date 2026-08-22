@@ -37,19 +37,23 @@ public struct Layer {
     @MainActor private static var packageCache: [String: PackageFile] = [:]
 
     /// Initialize a Layer with a name and a regex pattern to match file paths
+    ///
+    /// The pattern is compiled here rather than inside `resideIn`, which a layer rule calls
+    /// once per declaration in the scope. A pattern that does not compile is reported once,
+    /// where it was written, instead of once for every file it was asked about.
     public init(name: String, identifierPattern: String) {
         self.name = name
         self.modulesInLayer = []
-        self.resideIn = { declaration in
-            let filePath = declaration.filePath
-            let regexPattern = identifierPattern.replacingOccurrences(of: "..", with: ".*")
-            do {
-                let regex = try Regex(regexPattern)
-                return filePath.contains(regex)
-            } catch {
-                print("Invalid regex pattern in Layer definition: \(regexPattern) - \(error)")
-                return false
-            }
+
+        // `..` reads as "any run of characters", so a pattern can name a path segment
+        // without being written as a regular expression.
+        let regexPattern = identifierPattern.replacingOccurrences(of: "..", with: ".*")
+        switch PatternCache.compile(regexPattern) {
+        case .success(let regex):
+            self.resideIn = { $0.filePath.contains(regex) }
+        case .failure(let error):
+            print("Invalid regex pattern in Layer definition: \(regexPattern) - \(error)")
+            self.resideIn = { _ in false }
         }
     }
 

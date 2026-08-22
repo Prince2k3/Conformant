@@ -213,6 +213,26 @@ public struct Conformant {
 // reported as properties, and initializers as methods named `init`, because that is how
 // they are written and how rules reason about them.
 
+    /// Orders a mixed list of declarations the way the source reads them.
+    ///
+    /// The lists above are assembled one kind at a time, so without this a file's structs
+    /// would all precede its classes no matter where they were written. Rules report the
+    /// first declaration they find and freezing stores baselines line by line, so the order
+    /// is part of the output: the same files have to produce the same list every run.
+    /// `name`, and then the position in the assembled list, break the tie for declarations
+    /// that share a source position — a total order, so the result never depends on whether
+    /// `sorted(by:)` happened to be stable.
+    private func inSourceOrder(_ declarations: [AnySwiftDeclaration]) -> [AnySwiftDeclaration] {
+        declarations.enumerated().sorted { lhs, rhs in
+            if lhs.element.filePath != rhs.element.filePath { return lhs.element.filePath < rhs.element.filePath }
+            let left = lhs.element.location, right = rhs.element.location
+            if left.line != right.line { return left.line < right.line }
+            if left.column != right.column { return left.column < right.column }
+            if lhs.element.name != rhs.element.name { return lhs.element.name < rhs.element.name }
+            return lhs.offset < rhs.offset
+        }.map(\.element)
+    }
+
     public func declarations() -> [AnySwiftDeclaration] {
         var declarations: [AnySwiftDeclaration] = []
         declarations.append(contentsOf: imports().map(AnySwiftDeclaration.init))
@@ -231,7 +251,7 @@ public struct Conformant {
         declarations.append(contentsOf: subscripts().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: deinitializers().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: associatedTypes().map(AnySwiftDeclaration.init))
-        return declarations
+        return inSourceOrder(declarations)
     }
 
     /// Nominal types: classes, structs, enums, protocols, and actors.
@@ -242,7 +262,7 @@ public struct Conformant {
         declarations.append(contentsOf: enums().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: protocols().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: actors().map(AnySwiftDeclaration.init))
-        return declarations
+        return inSourceOrder(declarations)
     }
 
     public func typesAndExtensions() -> [AnySwiftDeclaration] {
@@ -253,34 +273,34 @@ public struct Conformant {
         declarations.append(contentsOf: protocols().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: actors().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: extensions().map(AnySwiftDeclaration.init))
-        return declarations
+        return inSourceOrder(declarations)
     }
 
     public func actorsAndExtensions() -> [AnySwiftDeclaration] {
         var declarations: [AnySwiftDeclaration] = []
         declarations.append(contentsOf: actors().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: extensions().map(AnySwiftDeclaration.init))
-        return declarations
+        return inSourceOrder(declarations)
     }
 
     public func classesAndExtensions() -> [AnySwiftDeclaration] {
         var declarations: [AnySwiftDeclaration] = []
         declarations.append(contentsOf: classes().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: extensions().map(AnySwiftDeclaration.init))
-        return declarations
+        return inSourceOrder(declarations)
     }
 
     public func structsAndExtensions() -> [AnySwiftDeclaration] {
         var declarations: [AnySwiftDeclaration] = []
         declarations.append(contentsOf: structs().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: extensions().map(AnySwiftDeclaration.init))
-        return declarations
+        return inSourceOrder(declarations)
     }
 
     public func enumsAndExtensions() -> [AnySwiftDeclaration] {
         var declarations: [AnySwiftDeclaration] = []
         declarations.append(contentsOf: enums().map(AnySwiftDeclaration.init))
         declarations.append(contentsOf: extensions().map(AnySwiftDeclaration.init))
-        return declarations
+        return inSourceOrder(declarations)
     }
 }

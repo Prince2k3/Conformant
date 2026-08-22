@@ -65,10 +65,10 @@ extension Collection where Element: SwiftDeclaration {
 
     /// Filter declarations by name matching regex
     public func withName(matching pattern: String) -> [Element] {
-        do {
-            let regex = try Regex(pattern)
+        switch PatternCache.compile(pattern) {
+        case .success(let regex):
             return self.filter { $0.name.contains(regex) }
-        } catch {
+        case .failure(let error):
             print("Invalid regex pattern: \(pattern) - \(error)")
             return []
         }
