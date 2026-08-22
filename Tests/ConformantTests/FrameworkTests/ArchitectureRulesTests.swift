@@ -4,7 +4,7 @@ import SwiftParser
 @testable import Conformant
 
 final class ArchitectureRulesTests: XCTestCase {
-    func testArchitectureRules() {
+    func testArchitectureRules() throws {
         let testFilesDirectory = makeSUT()
 
         defer {
@@ -12,7 +12,7 @@ final class ArchitectureRulesTests: XCTestCase {
         }
 
         // Get the scope from the test directory
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         // Testing architecture rules using the new Layer API
         let result = scope.assertArchitecture { rules in
@@ -53,7 +53,7 @@ final class ArchitectureRulesTests: XCTestCase {
         XCTAssertTrue(result, "Architecture rules should pass with the test files")
     }
     
-    func testArchitectureRuleViolations() {
+    func testArchitectureRuleViolations() throws {
         let testFilesDirectory = makeSUT()
 
         defer {
@@ -83,7 +83,7 @@ final class ArchitectureRulesTests: XCTestCase {
             
             try violationFile.write(toFile: violationPath, atomically: true, encoding: .utf8)
             
-            let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+            let scope = try Conformant.scope(directory: testFilesDirectory)
 
             let result = scope.assertArchitecture { rules in
                 // Define layers
@@ -105,7 +105,7 @@ final class ArchitectureRulesTests: XCTestCase {
         }
     }
     
-    func testLayerByDirectory() {
+    func testLayerByDirectory() throws {
         let testFilesDirectory = makeSUT()
 
         defer {
@@ -113,7 +113,7 @@ final class ArchitectureRulesTests: XCTestCase {
         }
 
         // Test creating layers by directory
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         // Define layers using directory
         let domainLayer = Layer(name: "Domain", directory: "Domain")
@@ -139,7 +139,7 @@ final class ArchitectureRulesTests: XCTestCase {
         XCTAssertTrue(inBothLayers.isEmpty, "No declaration should be in both Domain and Presentation layers")
     }
     
-    func testLayerByModule() {
+    func testLayerByModule() throws {
         let testFilesDirectory = makeSUT()
 
         defer {
@@ -147,7 +147,7 @@ final class ArchitectureRulesTests: XCTestCase {
         }
 
         // Test creating layers by module (import statements)
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         // Define layers using modules
         let domainModule = Layer(name: "DomainModule", directory: "Domain")
@@ -170,14 +170,14 @@ final class ArchitectureRulesTests: XCTestCase {
         XCTAssertTrue(importsCore.contains { $0.name == "APIClient" }, "APIClient should import Core")
     }
     
-    func testLayerWithCustomPredicate() {
+    func testLayerWithCustomPredicate() throws {
         let testFilesDirectory = makeSUT()
 
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         // Define a layer containing all view models
         let viewModelLayer = Layer(name: "ViewModels", predicate: { decl in
@@ -205,14 +205,14 @@ final class ArchitectureRulesTests: XCTestCase {
         XCTAssertTrue(repositories.contains { $0.name == "UserRepositoryImpl" }, "UserRepositoryImpl should be in Repositories layer")
     }
     
-    func testCombinedLayerRules() {
+    func testCombinedLayerRules() throws {
         let testFilesDirectory = makeSUT()
 
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         let result = scope.assertArchitecture { rules in
             // Define layers using different methods

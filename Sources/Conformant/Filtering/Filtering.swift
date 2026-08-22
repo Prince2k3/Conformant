@@ -146,8 +146,12 @@ extension Collection where Element: SwiftDeclaration {
     // MARK: - Location Filtering
 
     /// Filter declarations by residing in a specific file
+    ///
+    /// The supplied path is canonicalized before comparison, so it may be spelled
+    /// relatively or through a symlinked parent directory.
     public func inFile(_ filePath: String) -> [Element] {
-        return self.filter { $0.filePath == filePath }
+        let target = FilePath.canonical(filePath)
+        return self.filter { $0.filePath == target }
     }
 
     /// Filter declarations by residing in a file whose path contains the given string

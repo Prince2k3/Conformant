@@ -28,7 +28,15 @@ import Foundation
 /// Container for architecture rules
 public class ArchitectureRules {
     var rules: [ArchitectureRule] = []
-    var layers: [String: Layer] = [:]
+
+    /// Layers in the order they were defined.
+    ///
+    /// Order matters: a declaration can satisfy more than one layer predicate,
+    /// and the first matching layer wins. Keeping definition order makes rule
+    /// evaluation reproducible across runs.
+    private(set) var layers: [Layer] = []
+
+    private var layersByName: [String: Int] = [:]
 
     /// Add a rule to the architecture rules
     public func add(_ rule: ArchitectureRule) {
@@ -36,12 +44,21 @@ public class ArchitectureRules {
     }
 
     /// Define a layer in the architecture
+    ///
+    /// Redefining a layer with an existing name replaces it in place, keeping
+    /// its original position in the evaluation order.
     public func defineLayer(_ layer: Layer) {
-        layers[layer.name] = layer
+        if let existingIndex = layersByName[layer.name] {
+            layers[existingIndex] = layer
+        } else {
+            layersByName[layer.name] = layers.count
+            layers.append(layer)
+        }
     }
 
     /// Get a layer by name
     public func layer(_ name: String) -> Layer? {
-        return layers[name]
+        guard let index = layersByName[name] else { return nil }
+        return layers[index]
     }
 }

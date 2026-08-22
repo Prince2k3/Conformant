@@ -708,7 +708,7 @@ public struct PackageSwiftParser {
             return []
         }
 
-        var searchSubstring = targetParamsContent[depLabelRange.upperBound...].lstrip() // Remove leading whitespace
+        let searchSubstring = targetParamsContent[depLabelRange.upperBound...].lstrip() // Remove leading whitespace
         guard searchSubstring.starts(with: "[") else {
             print("Warning: Found 'dependencies:' label but no opening bracket '[' follows.")
             return []
@@ -800,7 +800,7 @@ public struct PackageSwiftParser {
             return []
         }
 
-        var searchSubstring = targetParamsContent[resLabelRange.upperBound...].lstrip()
+        let searchSubstring = targetParamsContent[resLabelRange.upperBound...].lstrip()
         guard searchSubstring.starts(with: "[") else {
             print("Warning: Found 'resources:' label but no opening bracket '[' follows.")
             return []

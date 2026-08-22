@@ -1,0 +1,74 @@
+fixture: Extensions.swift
+
+## imports (1)
+- Foundation @1:1
+    kind: regular
+    fullPath: Foundation
+    submodules: []
+    modifiers: []
+    annotations: []
+    dependencies: []
+
+## classes (0)
+  <none>
+
+## structs (0)
+  <none>
+
+## enums (0)
+  <none>
+
+## protocols (0)
+  <none>
+
+## extensions (3)
+- String @3:1
+    protocols: [Identifiable]
+    modifiers: []
+    annotations: []
+    dependencies: [Identifiable/conformance@3:19, String/extension@3:11, String/typeUsage@4:20]
+    properties:
+      - id: String @4:16
+          computed: true
+          initialValue: <none>
+          modifiers: [public]
+          annotations: []
+          dependencies: [String/typeUsage@4:20]
+    methods:
+      <none>
+- Array @7:1
+    protocols: []
+    modifiers: []
+    annotations: []
+    dependencies: [Array/extension@7:11, Element/typeUsage@8:33, Item/typeUsage@8:33]
+    properties:
+      <none>
+    methods:
+      - loadAll @8:5
+          parameters: []
+          returns: [Element.Item]
+          effects: async=true throws=true rethrows=false
+          hasBody: true
+          modifiers: []
+          annotations: []
+          dependencies: [Element/typeUsage@8:33, Item/typeUsage@8:33]
+- Money @11:1
+    protocols: []
+    modifiers: [private]
+    annotations: []
+    dependencies: [Bool/typeUsage@12:17, Money/extension@11:19]
+    properties:
+      - isZero: Bool @12:9
+          computed: true
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Bool/typeUsage@12:17]
+    methods:
+      <none>
+
+## top-level functions (0)
+  <none>
+
+## top-level properties (0)
+  <none>

@@ -25,9 +25,16 @@ let package = Package(
             dependencies: [
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftParser", package: "swift-syntax"),
+                .product(name: "SwiftParserDiagnostics", package: "swift-syntax"),
             ]),
         .testTarget(
             name: "ConformantTests",
-            dependencies: ["Conformant"]),
+            dependencies: ["Conformant"],
+            // Corpus fixtures are parsed as data, never compiled into the test
+            // target; expectation files are plain text read from disk.
+            exclude: [
+                "Corpus/Fixtures",
+                "Corpus/Expectations"
+            ]),
     ]
 )

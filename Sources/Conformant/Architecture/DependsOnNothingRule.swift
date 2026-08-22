@@ -49,14 +49,20 @@ public class DependsOnNothingRule: ArchitectureRule {
                     continue
                 }
 
-                if !source.resideIn(declaration) {
-                    violations.append(ArchitectureViolation(
-                        sourceDeclaration: declaration,
-                        dependency: dependency,
-                        ruleDescription: ruleDescription,
-                        detail: "Depends on external type '\(dependency.name)'"
-                    ))
+                // Only dependencies that resolve to a *different* known layer are
+                // violations; types within this layer, and types belonging to no
+                // declared layer (standard library, third-party modules), are fine.
+                guard let dependencyLayer = context.layerContaining(dependency: dependency),
+                      dependencyLayer.name != source.name else {
+                    continue
                 }
+
+                violations.append(ArchitectureViolation(
+                    sourceDeclaration: declaration,
+                    dependency: dependency,
+                    ruleDescription: ruleDescription,
+                    detail: "Depends on '\(dependency.name)' from layer '\(dependencyLayer.name)'"
+                ))
             }
         }
 

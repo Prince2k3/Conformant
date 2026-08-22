@@ -16,7 +16,7 @@ final class FreezingArchRuleTests: XCTestCase {
         // Run the test twice to verify freezing behavior
         for iteration in 1...2 {
             // Create a scope for the test directory
-            let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+            let scope = try Conformant.scope(directory: testFilesDirectory)
 
             // Test architecture with freezing rule
             let result = scope.assertArchitecture { rules in
@@ -66,7 +66,7 @@ final class FreezingArchRuleTests: XCTestCase {
         let violationStore = InMemoryViolationStore()
 
         // Create a scope for the test directory
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         // First run - should detect and store violations
         var result = scope.assertArchitecture { rules in
@@ -114,7 +114,7 @@ final class FreezingArchRuleTests: XCTestCase {
         }
 
         // Create a scope for the test directory
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         // First run - should detect and store violations
         var result = scope.assertArchitecture { rules in
@@ -177,7 +177,7 @@ final class FreezingArchRuleTests: XCTestCase {
         let violationFilePath = violationsDirectory + "/domain_violations.json"
 
         // First run - detect and store violation
-        var scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        var scope = try Conformant.scope(directory: testFilesDirectory)
         var result = scope.assertArchitecture { rules in
             // Define layers
             let domain = Layer(name: "Domain", directory: "Domain")
@@ -224,7 +224,7 @@ final class FreezingArchRuleTests: XCTestCase {
             try fixedFile.write(toFile: testFilesDirectory + "/Domain/DomainWithViolation.swift", atomically: true, encoding: .utf8)
 
             // Run the test again with the fixed code
-            scope = Conformant.scopeFromDirectory(testFilesDirectory)
+            scope = try Conformant.scope(directory: testFilesDirectory)
             result = scope.assertArchitecture { rules in
                 // Define layers
                 let domain = Layer(name: "Domain", directory: "Domain")
@@ -260,7 +260,7 @@ final class FreezingArchRuleTests: XCTestCase {
         let violationFilePath = violationsDirectory + "/domain_violations.json"
 
         // First run - detect and store initial violation
-        var scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        var scope = try Conformant.scope(directory: testFilesDirectory)
         var result = scope.assertArchitecture { rules in
             // Define layers
             let domain = Layer(name: "Domain", directory: "Domain")
@@ -303,7 +303,7 @@ final class FreezingArchRuleTests: XCTestCase {
             try newViolationFile.write(toFile: testFilesDirectory + "/Domain/AnotherViolation.swift", atomically: true, encoding: .utf8)
 
             // Run the test again with the new violation
-            scope = Conformant.scopeFromDirectory(testFilesDirectory)
+            scope = try Conformant.scope(directory: testFilesDirectory)
             result = scope.assertArchitecture { rules in
                 // Define layers
                 let domain = Layer(name: "Domain", directory: "Domain")
@@ -349,7 +349,7 @@ final class FreezingArchRuleTests: XCTestCase {
         }
 
         // First run - detect and store violation with custom matcher
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let result = scope.assertArchitecture { rules in
             // Define layers
             let domain = Layer(name: "Domain", directory: "Domain")
@@ -392,7 +392,7 @@ final class FreezingArchRuleTests: XCTestCase {
 
             // Run test again - with default matcher this would be considered frozen
             // but with our custom matcher it should be detected as a new violation
-            let updatedScope = Conformant.scopeFromDirectory(testFilesDirectory)
+            let updatedScope = try Conformant.scope(directory: testFilesDirectory)
             let updatedResult = updatedScope.assertArchitecture { rules in
                 // Define layers
                 let domain = Layer(name: "Domain", directory: "Domain")

@@ -480,7 +480,7 @@ final class PackageSwiftParserTests: XCTestCase {
     
     // MARK: - Error Handling Tests
     
-    func testInvalidPackageParsing() {
+    func testInvalidPackageParsing() throws {
         // Test parsing an invalid package
         let content = """
         // This is not a valid Package.swift file
@@ -505,7 +505,7 @@ final class PackageSwiftParserTests: XCTestCase {
         }
     }
     
-    func testParserWithEmptyContent() {
+    func testParserWithEmptyContent() throws {
         // Test with empty content
         let parser = PackageSwiftParser(content: "")
         
@@ -520,54 +520,6 @@ final class PackageSwiftParserTests: XCTestCase {
         } catch {
             // Or it might throw an error, which is fine too
             XCTAssertNotNil(error)
-        }
-    }
-}
-
-// MARK: - Additional Test Extensions
-
-extension PackageFile.Product.ProductType: Equatable {
-    public static func == (lhs: PackageFile.Product.ProductType, rhs: PackageFile.Product.ProductType) -> Bool {
-        switch (lhs, rhs) {
-        case (.executable, .executable):
-            return true
-        case (.library(let lhsType), .library(let rhsType)):
-            return lhsType == rhsType
-        default:
-            return false
-        }
-    }
-}
-
-extension PackageFile.Product.ProductType.LibraryType: Equatable {
-    public static func == (lhs: PackageFile.Product.ProductType.LibraryType, rhs: PackageFile.Product.ProductType.LibraryType) -> Bool {
-        switch (lhs, rhs) {
-        case (.dynamic, .dynamic), (.static, .static), (.automatic, .automatic):
-            return true
-        default:
-            return false
-        }
-    }
-}
-
-extension PackageFile.Target.TargetType: Equatable {
-    public static func == (lhs: PackageFile.Target.TargetType, rhs: PackageFile.Target.TargetType) -> Bool {
-        switch (lhs, rhs) {
-        case (.regular, .regular), (.test, .test), (.system, .system), (.binary, .binary), (.plugin, .plugin):
-            return true
-        default:
-            return false
-        }
-    }
-}
-
-extension PackageFile.Resource.Rule: Equatable {
-    public static func == (lhs: PackageFile.Resource.Rule, rhs: PackageFile.Resource.Rule) -> Bool {
-        switch (lhs, rhs) {
-        case (.process, .process), (.copy, .copy):
-            return true
-        default:
-            return false
         }
     }
 }

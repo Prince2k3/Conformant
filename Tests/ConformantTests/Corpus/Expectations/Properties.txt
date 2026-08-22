@@ -1,0 +1,109 @@
+fixture: Properties.swift
+
+## imports (1)
+- SwiftUI @1:1
+    kind: regular
+    fullPath: SwiftUI
+    submodules: []
+    modifiers: []
+    annotations: []
+    dependencies: []
+
+## classes (0)
+  <none>
+
+## structs (1)
+- WithProperties @6:1
+    protocols: []
+    modifiers: []
+    annotations: []
+    dependencies: [ExpensiveResource/typeUsage@12:25, Int/typeUsage@11:17, Int/typeUsage@11:17, Int/typeUsage@16:19, Int/typeUsage@17:24, Item/typeUsage@8:27, Owner/typeUsage@14:24, SomeDelegate/typeUsage@13:24, String/typeUsage@11:30]
+    properties:
+      - locale: Any @7:40
+          computed: false
+          initialValue: <none>
+          modifiers: [private]
+          annotations: [@Environment(_: \.locale)]
+          dependencies: []
+      - items: [Item] @8:20
+          computed: false
+          initialValue: []
+          modifiers: []
+          annotations: [@Published]
+          dependencies: [Item/typeUsage@8:27]
+      - isPresented: Any @9:24
+          computed: false
+          initialValue: false
+          modifiers: [private]
+          annotations: [@State]
+          dependencies: []
+      - multiA: Int @11:9
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Int/typeUsage@11:17]
+      - multiB: String @11:22
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Int/typeUsage@11:17, String/typeUsage@11:30]
+      - expensive: ExpensiveResource @12:14
+          computed: false
+          initialValue: ExpensiveResource()
+          modifiers: []
+          annotations: []
+          dependencies: [ExpensiveResource/typeUsage@12:25]
+      - delegate: SomeDelegate? @13:14
+          computed: false
+          initialValue: <none>
+          modifiers: [weak]
+          annotations: []
+          dependencies: [SomeDelegate/typeUsage@13:24]
+      - owner: Owner @14:17
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Owner/typeUsage@14:24]
+      - computed: Int @16:9
+          computed: true
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Int/typeUsage@16:19]
+      - withAccessors: Int @17:9
+          computed: true
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Int/typeUsage@17:24]
+    methods:
+      <none>
+
+## enums (0)
+  <none>
+
+## protocols (0)
+  <none>
+
+## extensions (0)
+  <none>
+
+## top-level functions (0)
+  <none>
+
+## top-level properties (2)
+- topLevelConstant: Configuration @3:5
+    computed: false
+    initialValue: Configuration()
+    modifiers: []
+    annotations: []
+    dependencies: [Configuration/typeUsage@3:23]
+- topLevelVariable: Any @4:5
+    computed: false
+    initialValue: 42
+    modifiers: []
+    annotations: []
+    dependencies: []

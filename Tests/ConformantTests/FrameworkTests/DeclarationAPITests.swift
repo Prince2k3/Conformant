@@ -4,13 +4,13 @@ import SwiftParser
 @testable import Conformant
 
 final class DeclarationAPITests: XCTestCase {
-    func testImportDeclaration() {
+    func testImportDeclaration() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         let imports = scope.imports()
             .filter { $0.isImportOf("Foundation") }
@@ -19,14 +19,14 @@ final class DeclarationAPITests: XCTestCase {
         XCTAssertEqual(imports.count, 3, "Each file should import Foundation")
     }
 
-    func testClassDeclaration() {
+    func testClassDeclaration() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
         // Get the class declaration
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let classes = scope.classes()
         
         XCTAssertEqual(classes.count, 1, "Should find 1 class")
@@ -72,14 +72,14 @@ final class DeclarationAPITests: XCTestCase {
         }
     }
     
-    func testStructDeclaration() {
+    func testStructDeclaration() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
         // Get the struct declaration
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let structs = scope.structs()
         
         XCTAssertEqual(structs.count, 1, "Should find 1 struct")
@@ -119,14 +119,14 @@ final class DeclarationAPITests: XCTestCase {
         XCTAssertEqual(staticProperties.count, 2, "NetworkConfiguration should have 2 static properties")
     }
     
-    func testProtocolDeclaration() {
+    func testProtocolDeclaration() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
         // Get the protocol declarations
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let protocols = scope.protocols()
         
         XCTAssertEqual(protocols.count, 3, "Should find 3 protocols")
@@ -162,13 +162,13 @@ final class DeclarationAPITests: XCTestCase {
         XCTAssertTrue(configurableMethods.contains { $0.name == "configure" }, "Should have configure method requirement")
     }
     
-    func testExtensionDeclaration() {
+    func testExtensionDeclaration() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let extensions = scope.extensions()
         
         XCTAssertEqual(extensions.count, 1, "Should find 1 extension")
@@ -201,13 +201,13 @@ final class DeclarationAPITests: XCTestCase {
         }
     }
     
-    func testMethodDeclaration() {
+    func testMethodDeclaration() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let classes = scope.classes()
         
         guard let networkService = classes.first(where: { $0.name == "NetworkService" }) else {
@@ -255,13 +255,13 @@ final class DeclarationAPITests: XCTestCase {
         XCTAssertTrue(completionParam?.type.contains("@escaping") ?? false, "completion parameter should be @escaping")
     }
     
-    func testPropertyDeclaration() {
+    func testPropertyDeclaration() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let structs = scope.structs()
         
         guard let networkConfig = structs.first(where: { $0.name == "NetworkConfiguration" }) else {
@@ -320,13 +320,13 @@ final class DeclarationAPITests: XCTestCase {
         XCTAssertNotNil(devProp.initialValue, "production property should have an initial value")
     }
     
-    func testModifiersAndAnnotations() {
+    func testModifiersAndAnnotations() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let classes = scope.classes()
         
         guard let networkService = classes.first(where: { $0.name == "NetworkService" }) else {
@@ -363,13 +363,13 @@ final class DeclarationAPITests: XCTestCase {
         XCTAssertEqual(methodAnnotation?.arguments["iOS"], "14.0", "iOS argument should be 14.0")
     }
     
-    func testResideInPackage() {
+    func testResideInPackage() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let allDeclarations = scope.typesAndExtensions()
 
         for declaration in allDeclarations {
@@ -386,12 +386,12 @@ final class DeclarationAPITests: XCTestCase {
         XCTAssertEqual(configFile.count, 1, "Should find 1 declaration in NetworkConfiguration.swift")
     }
     
-    func testLocation() {
+    func testLocation() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let allDeclarations = scope.declarations()
 
         for declaration in allDeclarations {

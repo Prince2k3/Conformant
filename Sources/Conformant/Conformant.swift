@@ -25,143 +25,83 @@
 
 import Foundation
 
-/// Represents a collection of Swift files to analyze
+/// Represents a collection of Swift files to analyze.
+///
+/// Build a scope with one of the throwing `scope(...)` factories. They apply a
+/// ``ScopePolicy`` so that an unreadable path, a file with syntax errors, or a scope that
+/// matched nothing is reported instead of quietly producing a scope in which every rule
+/// passes.
 public struct Conformant {
     private let swiftFiles: [SwiftFile]
 
-    private init(swiftFiles: [SwiftFile]) {
+    /// Diagnostics gathered while building this scope: syntax errors, unreadable files, and
+    /// warnings about constructs the extractor could not represent.
+    public let diagnostics: [ParseDiagnostic]
+
+    private init(swiftFiles: [SwiftFile], diagnostics: [ParseDiagnostic] = []) {
         self.swiftFiles = swiftFiles
+        self.diagnostics = diagnostics
     }
 
+    private init(_ result: ScopeBuilder.Result) {
+        self.init(swiftFiles: result.files, diagnostics: result.diagnostics)
+    }
+
+    // MARK: - Scope construction
+
+    /// Builds a scope from every Swift file under a project directory.
+    ///
+    /// - Throws: ``ConformantError`` when the policy says to fail on a missing path,
+    ///   an unreadable file, a syntax error, or an empty result.
+    public static func scope(
+        project path: String = FileManager.default.currentDirectoryPath,
+        policy: ScopePolicy = .strict
+    ) throws -> Conformant {
+        Conformant(try ScopeBuilder(policy: policy).build(directory: path))
+    }
+
+    /// Builds a scope from every Swift file under a directory.
+    public static func scope(
+        directory path: String,
+        policy: ScopePolicy = .strict
+    ) throws -> Conformant {
+        Conformant(try ScopeBuilder(policy: policy).build(directory: path))
+    }
+
+    /// Builds a scope from a single Swift file.
+    public static func scope(
+        file path: String,
+        policy: ScopePolicy = .strict
+    ) throws -> Conformant {
+        Conformant(try ScopeBuilder(policy: policy).build(file: path))
+    }
+
+    /// `true` when the scope holds no files. Rules evaluated against an empty scope all
+    /// pass vacuously, so tests should treat this as a failure rather than a success.
+    public var isEmpty: Bool {
+        swiftFiles.isEmpty
+    }
+
+    /// `true` when any file in the scope failed to parse cleanly.
+    public var hasSyntaxErrors: Bool {
+        diagnostics.contains { $0.severity == .error }
+    }
+
+    // MARK: - Deprecated construction
+
+    @available(*, deprecated, message: "Use scope(project:) — it reports parse failures instead of silently returning an empty scope.")
     public static func scopeFromProject(_ projectPath: String = FileManager.default.currentDirectoryPath) -> Conformant {
-        let fileManager = FileManager.default
-        let parser = SwiftSyntaxParser()
-        var swiftFiles: [SwiftFile] = []
-
-        // Helper function to recursively scan directories
-        func scanDirectory(_ directoryPath: String) {
-            do {
-                let contents = try fileManager.contentsOfDirectory(atPath: directoryPath)
-
-                for item in contents {
-                    let itemPath = (directoryPath as NSString).appendingPathComponent(item)
-                    var isDirectory: ObjCBool = false
-
-                    if fileManager.fileExists(atPath: itemPath, isDirectory: &isDirectory) {
-                        if isDirectory.boolValue {
-                            // Skip common directories that shouldn't be analyzed
-                            if !shouldSkipDirectory(item) {
-                                scanDirectory(itemPath)
-                            }
-                        } else if item.hasSuffix(".swift") {
-                            // Parse Swift file and add to scope
-                            do {
-                                let swiftFile = try parser.parseFile(path: itemPath)
-                                swiftFiles.append(swiftFile)
-                            } catch {
-                                print("Error parsing Swift file at \(itemPath): \(error)")
-                            }
-                        }
-                    }
-                }
-            } catch {
-                print("Error scanning directory \(directoryPath): \(error)")
-            }
-        }
-
-        // Start scanning from the project root
-        scanDirectory(projectPath)
-
-        return Conformant(swiftFiles: swiftFiles)
+        (try? scope(project: projectPath, policy: .lenient)) ?? Conformant(swiftFiles: [])
     }
 
-    private static func shouldSkipDirectory(_ directoryName: String) -> Bool {
-        // Common directories to skip
-        let directoriesToSkip = [
-            ".git",           // Git directory
-            ".build",         // Swift build directory
-            "Pods",           // CocoaPods
-            "Carthage",       // Carthage
-            "DerivedData",    // Xcode derived data
-            ".xcodeproj",     // Xcode project files
-            ".xcworkspace",   // Xcode workspace
-            ".playground",    // Swift playgrounds
-            "node_modules",   // Node.js modules
-            ".github",        // GitHub configuration
-            ".gitlab",        // GitLab configuration
-            "fastlane",       // Fastlane directory
-            "vendor",         // Vendor dependencies
-            "Frameworks",     // Frameworks directory that might contain compiled binaries
-            "Products"        // Products directory
-        ]
-        
-        // Skip hidden directories (those starting with .)
-        if directoryName.hasPrefix(".") {
-            return true
-        }
-        
-        // Skip directories in the skip list
-        return directoriesToSkip.contains { directoryName.contains($0) }
-    }
-
+    @available(*, deprecated, message: "Use scope(directory:) — it reports parse failures instead of silently returning an empty scope.")
     public static func scopeFromDirectory(_ path: String) -> Conformant {
-        let fileManager = FileManager.default
-        let rootURL = URL(fileURLWithPath: path)
-        var swiftFileURLs: [URL] = []
-
-        guard let enumerator = fileManager.enumerator(
-            at: rootURL,
-            includingPropertiesForKeys: nil, 
-            options: [.skipsHiddenFiles, .skipsPackageDescendants],
-            errorHandler: { url, error -> Bool in
-                print("Directory enumerator error at \(url): \(error)")
-                return true
-            }
-        ) else {
-            print("Error: Could not create directory enumerator for path: \(path)")
-            return Conformant(swiftFiles: [])
-        }
-
-        for case let fileURL as URL in enumerator {
-            if fileURL.pathExtension == "swift" {
-                // Optional: Check if it's a regular file if not done via keys
-                // var isRegularFile: ObjCBool = false
-                // if fileManager.fileExists(atPath: fileURL.path, isDirectory: &isRegularFile) && isRegularFile.boolValue {
-                swiftFileURLs.append(fileURL)
-                // }
-            }
-        }
-
-        if swiftFileURLs.isEmpty {
-            print("Warning: No Swift files found recursively in directory: \(path)")
-            if !fileManager.fileExists(atPath: path) {
-                print("Error: Directory path does not exist: \(path)")
-            }
-            return Conformant(swiftFiles: [])
-        }
-
-        let parser = SwiftSyntaxParser()
-        let swiftFiles = swiftFileURLs.compactMap { url -> SwiftFile? in
-            do {
-                return try parser.parseFile(path: url.path)
-            } catch {
-                print("Error parsing file \(url.path): \(error)")
-                return nil
-            }
-        }
-
-        return Conformant(swiftFiles: swiftFiles)
+        (try? scope(directory: path, policy: .lenient)) ?? Conformant(swiftFiles: [])
     }
 
+    @available(*, deprecated, message: "Use scope(file:) — it reports parse failures instead of silently returning an empty scope.")
     public static func scopeFromFile(path: String) -> Conformant {
-        do {
-            let parser = SwiftSyntaxParser()
-            let file = try parser.parseFile(path: path)
-            return Conformant(swiftFiles: [file])
-        } catch {
-            print("Error parsing file \(path): \(error)")
-            return Conformant(swiftFiles: [])
-        }
+        (try? scope(file: path, policy: .lenient)) ?? Conformant(swiftFiles: [])
     }
 
     // Query methods

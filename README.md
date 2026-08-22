@@ -42,6 +42,47 @@ Then add Conformant as a dependency to your target:
 
 ## Usage
 
+### Building a Scope
+
+Every check starts from a scope — the set of Swift files to analyze.
+
+```swift
+// Everything under the current directory
+let scope = try Conformant.scope()
+
+// Everything under a specific directory
+let scope = try Conformant.scope(directory: "Sources/Domain")
+
+// A single file
+let scope = try Conformant.scope(file: "Sources/Domain/User.swift")
+```
+
+These throw rather than returning an empty scope when something is wrong. That matters:
+rules evaluated against zero declarations all pass, so a mistyped path would otherwise
+turn into a green test run that checked nothing.
+
+`ScopePolicy` controls what counts as "wrong":
+
+| Policy | Missing path | Syntax error | No files found |
+|---|---|---|---|
+| `.strict` (default) | throws | throws | throws |
+| `.warning` | records a diagnostic | keeps the file, records a diagnostic | records a diagnostic |
+| `.lenient` | ignored | ignored | ignored |
+
+```swift
+// Analyze what parses and inspect the rest, instead of failing outright.
+let scope = try Conformant.scope(directory: "Sources", policy: .warning)
+if scope.hasSyntaxErrors {
+    print(scope.diagnostics.errors.summary())
+}
+```
+
+Individual reactions can be mixed:
+
+```swift
+let policy = ScopePolicy(onSyntaxError: .warn, onUnreadableFile: .fail, onEmptyScope: .fail)
+```
+
 ### Basic Code Structure Validation
 
 ```swift
@@ -50,9 +91,9 @@ import Conformant
 
 class CodeStructureTests: XCTestCase {
     
-    func testViewControllerNaming() {
+    func testViewControllerNaming() throws {
         // Test that all ViewControllers follow the naming convention
-        let scope = SwiftScope.fromProject()
+        let scope = try Conformant.scope()
         
         let viewControllers = scope.classes().withNameSuffix("ViewController")
         
@@ -60,9 +101,9 @@ class CodeStructureTests: XCTestCase {
         
     }
     
-    func testRepositoryPattern() {
+    func testRepositoryPattern() throws {
         // Test that repository implementations follow the repository pattern
-        let scope = SwiftScope.fromProject()
+        let scope = try Conformant.scope()
         
         let repositories = scope.classes().withNameSuffix("RepositoryImpl")
         
@@ -82,8 +123,8 @@ import Conformant
 
 class ArchitectureTests: XCTestCase {
     
-    func testCleanArchitecture() {
-        let scope = SwiftScope.fromProject()
+    func testCleanArchitecture() throws {
+        let scope = try Conformant.scope()
         
         let result = scope.assertArchitecture { rules in
             // Define layers
@@ -116,6 +157,23 @@ class ArchitectureTests: XCTestCase {
 }
 ```
 
+`assertArchitecture` answers yes or no. When you want the detail, use
+`checkArchitecture`, which returns every failure it found — including problems with the
+scope itself, reported separately so a run that checked nothing is never mistaken for a
+run that passed:
+
+```swift
+let result = scope.checkArchitecture { rules in /* ... */ }
+XCTAssertTrue(result.passed, result.description)
+```
+
+Under XCTest, `verifyArchitecture` does the same and reports each failure through
+`XCTFail` directly:
+
+```swift
+scope.verifyArchitecture { rules in /* ... */ }
+```
+
 ### Using Freezing Rules for Legacy Projects
 
 ```swift
@@ -124,8 +182,8 @@ import Conformant
 
 class ArchitectureTests: XCTestCase {
     
-    func testArchitectureWithFreezing() {
-        let scope = SwiftScope.fromProject()
+    func testArchitectureWithFreezing() throws {
+        let scope = try Conformant.scope()
         
         let result = scope.assertArchitecture { rules in
             // Define layers
@@ -152,8 +210,8 @@ class ArchitectureTests: XCTestCase {
         XCTAssertTrue(result, "No new architecture violations should be introduced")
     }
     
-    func testFreezingAllRules() {
-        let scope = SwiftScope.fromProject()
+    func testFreezingAllRules() throws {
+        let scope = try Conformant.scope()
         
         let result = scope.assertArchitecture { rules in
             // Define layers and rules
@@ -176,9 +234,9 @@ import Conformant
 
 class ImportTests: XCTestCase {
     
-    func testUIKitUsage() {
+    func testUIKitUsage() throws {
         // Test that UIKit is only imported in approved locations
-        let scope = SwiftScope.fromProject()
+        let scope = try Conformant.scope()
         
         // Get all files that import UIKit
         let uiKitImports = scope.imports().withName("UIKit")
@@ -189,9 +247,9 @@ class ImportTests: XCTestCase {
         }
     }
     
-    func testNoUIKitInDomain() {
+    func testNoUIKitInDomain() throws {
         // Test that domain layer doesn't import UI frameworks
-        let domainScope = SwiftScope.fromDirectory("Sources/Domain")
+        let domainScope = try Conformant.scope(directory: "Sources/Domain")
         
         // Check for imports of UI frameworks
         let uiImports = domainScope.imports().assertEmpty(message: "Domain layer should not import UI frameworks") { 

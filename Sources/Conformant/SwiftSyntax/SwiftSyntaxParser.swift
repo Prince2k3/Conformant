@@ -23,19 +23,66 @@
 //  SOFTWARE.
 //
 
+
 import Foundation
 import SwiftSyntax
 import SwiftParser
+import SwiftParserDiagnostics
 
 /// Parser that uses SwiftSyntax to extract declarations from Swift files
 public class SwiftSyntaxParser {
+
+    public init() {}
+
     public func parseFile(path: String) throws -> SwiftFile {
         let url = URL(fileURLWithPath: path)
-        let fileContent = try String(contentsOf: url, encoding: .utf8)
-        let sourceFile: SourceFileSyntax = Parser.parse(source: fileContent)
-        let converter = SourceLocationConverter(fileName: path, tree: sourceFile)
-        let visitor = SwiftSyntaxVisitor(filePath: path, converter: converter)
+        let fileContent: String
+        do {
+            fileContent = try String(contentsOf: url, encoding: .utf8)
+        } catch {
+            throw ConformantError.fileNotReadable(path: FilePath.canonical(path), underlying: error)
+        }
+        return parse(source: fileContent, path: path)
+    }
+
+    /// Parses source held in memory. The path is recorded on the result but never read
+    /// from disk, which makes the extractor testable without touching the file system.
+    public func parse(source: String, path: String) -> SwiftFile {
+        // Record a canonical path so declarations parsed through different
+        // entry points (and through symlinked directories) compare equal.
+        let canonicalPath = FilePath.canonical(path)
+        let sourceFile: SourceFileSyntax = Parser.parse(source: source)
+        let converter = SourceLocationConverter(fileName: canonicalPath, tree: sourceFile)
+
+        let sink = DiagnosticSink()
+        // SwiftParser always returns a tree — invalid source yields error nodes rather
+        // than a failure. Without this check a truncated file would be extracted as if
+        // it were complete, and the declarations it lost would look like clean code.
+        collectSyntaxDiagnostics(in: sourceFile, converter: converter, path: canonicalPath, into: sink)
+
+        let visitor = SwiftSyntaxVisitor(filePath: canonicalPath, converter: converter, diagnostics: sink)
         visitor.walk(sourceFile)
         return visitor.makeSwiftFile()
+    }
+
+    private func collectSyntaxDiagnostics(
+        in sourceFile: SourceFileSyntax,
+        converter: SourceLocationConverter,
+        path: String,
+        into sink: DiagnosticSink
+    ) {
+        // `hasError` is a cheap flag on the tree; generating diagnostics is not, so only
+        // pay for it when something is actually wrong.
+        guard sourceFile.hasError else { return }
+
+        for diagnostic in ParseDiagnosticsGenerator.diagnostics(for: sourceFile) {
+            let position = converter.location(for: diagnostic.position)
+            sink.record(ParseDiagnostic(
+                severity: diagnostic.diagMessage.severity == .warning ? .warning : .error,
+                category: .syntaxError,
+                message: diagnostic.message,
+                location: SourceLocation(file: path, line: position.line, column: position.column)
+            ))
+        }
     }
 }

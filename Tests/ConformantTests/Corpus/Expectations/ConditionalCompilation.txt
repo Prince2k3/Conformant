@@ -1,0 +1,74 @@
+fixture: ConditionalCompilation.swift
+
+## imports (2)
+- UIKit @2:1
+    kind: regular
+    fullPath: UIKit
+    submodules: []
+    modifiers: []
+    annotations: []
+    dependencies: []
+- AppKit @5:1
+    kind: regular
+    fullPath: AppKit
+    submodules: []
+    modifiers: []
+    annotations: []
+    dependencies: []
+
+## classes (3)
+- PlatformView @3:1
+    superclass: UIView
+    protocols: []
+    modifiers: [public]
+    annotations: []
+    dependencies: [UIView/inheritance@3:28]
+    properties:
+      <none>
+    methods:
+      <none>
+- PlatformView @6:1
+    superclass: NSView
+    protocols: []
+    modifiers: [public]
+    annotations: []
+    dependencies: [NSView/inheritance@6:28]
+    properties:
+      <none>
+    methods:
+      <none>
+- PlatformView @8:1
+    superclass: <none>
+    protocols: []
+    modifiers: [public]
+    annotations: []
+    dependencies: []
+    properties:
+      <none>
+    methods:
+      <none>
+
+## structs (0)
+  <none>
+
+## enums (0)
+  <none>
+
+## protocols (0)
+  <none>
+
+## extensions (0)
+  <none>
+
+## top-level functions (1)
+- debugOnly @12:1
+    parameters: []
+    returns: DebugTool
+    effects: async=false throws=false rethrows=false
+    hasBody: true
+    modifiers: []
+    annotations: []
+    dependencies: [DebugTool/typeUsage@12:18]
+
+## top-level properties (0)
+  <none>

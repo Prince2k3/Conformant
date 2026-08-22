@@ -1,0 +1,66 @@
+fixture: Imports.swift
+
+## imports (6)
+- Foundation @1:1
+    kind: regular
+    fullPath: Foundation
+    submodules: []
+    modifiers: []
+    annotations: []
+    dependencies: []
+- SwiftUI @2:1
+    kind: typeOnly
+    fullPath: SwiftUI.Color
+    submodules: [Color]
+    modifiers: []
+    annotations: []
+    dependencies: []
+- UIKit @3:1
+    kind: typeOnly
+    fullPath: UIKit.UIView
+    submodules: [UIView]
+    modifiers: []
+    annotations: []
+    dependencies: []
+- MyModule @4:1
+    kind: regular
+    fullPath: MyModule
+    submodules: []
+    modifiers: []
+    annotations: [@testable]
+    dependencies: []
+- Shared @5:1
+    kind: regular
+    fullPath: Shared
+    submodules: []
+    modifiers: []
+    annotations: [@_exported]
+    dependencies: []
+- Deep @6:1
+    kind: component
+    fullPath: Deep.Nested.Module
+    submodules: [Nested, Module]
+    modifiers: []
+    annotations: []
+    dependencies: []
+
+## classes (0)
+  <none>
+
+## structs (0)
+  <none>
+
+## enums (0)
+  <none>
+
+## protocols (0)
+  <none>
+
+## extensions (0)
+  <none>
+
+## top-level functions (0)
+  <none>
+
+## top-level properties (0)
+  <none>

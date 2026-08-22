@@ -10,7 +10,7 @@ final class ScopeAPITests: XCTestCase {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         XCTAssertEqual(scope.files().count, 6, "Should find all 6 Swift files in the directory")
     }
 
@@ -21,7 +21,7 @@ final class ScopeAPITests: XCTestCase {
         }
 
         let filePath = testFilesDirectory + "/TestClass.swift"
-        let scope = Conformant.scopeFromFile(path: filePath)
+        let scope = try Conformant.scope(file: filePath)
 
         XCTAssertEqual(scope.files().count, 1, "Should contain only one file")
         XCTAssertEqual(scope.files().first?.path, filePath, "Should match the requested file path")
@@ -33,7 +33,7 @@ final class ScopeAPITests: XCTestCase {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let classes = scope.classes()
 
         XCTAssertEqual(classes.count, 3, "Should find 3 classes (TestClass, TestSubclass, NetworkMonitor)")
@@ -62,7 +62,7 @@ final class ScopeAPITests: XCTestCase {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let structs = scope.structs()
 
         XCTAssertEqual(structs.count, 2, "Should find 2 structs (User, Configuration)")
@@ -95,7 +95,7 @@ final class ScopeAPITests: XCTestCase {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let protocols = scope.protocols()
 
         XCTAssertEqual(protocols.count, 5, "Should find 5 protocols (Repository, UserManagement, Observable, Observer, NetworkMonitoring)")
@@ -132,7 +132,7 @@ final class ScopeAPITests: XCTestCase {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let extensions = scope.extensions()
 
         // Extension count validation: User, User+CustomStringConvertible, String, NetworkMonitor+NetworkMonitoring
@@ -176,7 +176,7 @@ final class ScopeAPITests: XCTestCase {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let enums = scope.enums()
 
         XCTAssertEqual(enums.count, 3, "Should find 3 enums (UserRole, APIError, ConnectionType)")
@@ -224,7 +224,7 @@ final class ScopeAPITests: XCTestCase {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let functions = scope.functions()
 
         XCTAssertEqual(functions.count, 1, "Should find 1 top-level function")
@@ -252,7 +252,7 @@ final class ScopeAPITests: XCTestCase {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let properties = scope.properties()
 
         XCTAssertEqual(properties.count, 1, "Should find 1 top-level property")
@@ -279,7 +279,7 @@ final class ScopeAPITests: XCTestCase {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         let testClasses = scope.classes().withNameStarting(with: "Test")
         XCTAssertEqual(testClasses.count, 2, "Should find 2 classes with 'Test' prefix")
@@ -291,7 +291,7 @@ final class ScopeAPITests: XCTestCase {
         XCTAssertEqual(userTypes.count, 3, "Should find 3 types containing 'User'")
 
         // Filter types by regex
-        let errorTypes = scope.declarations().withNameMatching(".*Error")
+        let errorTypes = scope.declarations().withName(matching: ".*Error")
         // APIError (enum) = 1
         XCTAssertEqual(errorTypes.count, 1, "Should find 1 type matching '.*Error'")
     }
@@ -302,7 +302,7 @@ final class ScopeAPITests: XCTestCase {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         let publicTypes = scope.types().filter { $0.hasModifier(.public) }
         // TestClass, User, Repository, UserManagement, Observable, Observer, UserRole, APIError, Configuration, NetworkMonitor, ConnectionType, NetworkMonitoring = 12
@@ -343,7 +343,7 @@ final class ScopeAPITests: XCTestCase {
             cleanup(testFilesDirectory)
         }
         
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         let publicClasses = scope.classes().filter { $0.hasModifier(.public) }
         let initResult = publicClasses.assertTrue { publicClass in

@@ -60,3 +60,14 @@ public struct StoredViolation: Codable, Hashable {
         self.declarationName = declarationName
     }
 }
+
+extension Sequence where Element == StoredViolation {
+    /// Returns the violations in a stable, human-readable order so that a
+    /// persisted baseline only changes when the violations themselves change.
+    func sortedForStorage() -> [StoredViolation] {
+        sorted { lhs, rhs in
+            (lhs.filePath, lhs.line, lhs.declarationName, lhs.ruleDescription, lhs.detail)
+                < (rhs.filePath, rhs.line, rhs.declarationName, rhs.ruleDescription, rhs.detail)
+        }
+    }
+}

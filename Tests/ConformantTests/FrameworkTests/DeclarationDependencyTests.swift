@@ -10,7 +10,7 @@ final class DeclarationDependencyTests: XCTestCase {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let files = scope.files()
 
         let foundationImports = files.flatMap { $0.imports }.filter { $0.name == "Foundation" }
@@ -33,7 +33,7 @@ final class DeclarationDependencyTests: XCTestCase {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         guard let serviceClass = scope.classes().first(where: { $0.name == "NetworkService" }) else {
             XCTFail("NetworkService class not found")
             return
@@ -64,7 +64,7 @@ final class DeclarationDependencyTests: XCTestCase {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         guard let configStruct = scope.structs().first(where: { $0.name == "NetworkConfiguration" }) else {
             XCTFail("NetworkConfiguration struct not found")
             return
@@ -89,7 +89,7 @@ final class DeclarationDependencyTests: XCTestCase {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         guard let serviceProvider = scope.protocols().first(where: { $0.name == "NetworkServiceProvider" }) else {
             XCTFail("NetworkServiceProvider protocol not found")
             return
@@ -123,7 +123,7 @@ final class DeclarationDependencyTests: XCTestCase {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         guard let serviceExtension = scope.extensions().first(where: { $0.name == "NetworkService" }) else {
             XCTFail("NetworkService extension not found")
             return
@@ -143,7 +143,8 @@ final class DeclarationDependencyTests: XCTestCase {
             converter: SourceLocationConverter(
                 fileName: "dummy",
                 tree: SourceFileSyntax(statements: [])
-            )
+            ),
+            diagnostics: DiagnosticSink()
         )
 
         XCTAssertEqual(visitor.extractTypeNames(from: "String"), ["String"])
@@ -164,7 +165,7 @@ final class DeclarationDependencyTests: XCTestCase {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         guard let complexStruct = scope.structs().first(where: { $0.name == "ComplexTypes" }) else {
             XCTFail("ComplexTypes struct not found")
             return

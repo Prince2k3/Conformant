@@ -7,13 +7,13 @@ import SwiftParser
 @Suite
 struct AssertionsSwiftTestingTests {
     @Test
-    func assertTrue() {
+    func assertTrue() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         let goodViewModels = scope.classes().filter {
             $0.name == "UserViewModel" || $0.name == "ProductViewModel"
@@ -41,13 +41,13 @@ struct AssertionsSwiftTestingTests {
     }
 
     @Test
-    func assertFalse() {
+    func assertFalse() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         let goodViewModels = scope.classes().filter {
             $0.name == "UserViewModel" || $0.name == "ProductViewModel"
@@ -71,13 +71,13 @@ struct AssertionsSwiftTestingTests {
     }
 
     @Test
-    func assertionsWithComplexPredicates() {
+    func assertionsWithComplexPredicates() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         let allViewModels = scope.classes().filter { $0.name.hasSuffix("ViewModel") }
 
@@ -114,13 +114,13 @@ struct AssertionsSwiftTestingTests {
     }
 
     @Test
-    func combiningAssertions() {
+    func combiningAssertions() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         let allClasses = scope.classes()
         let allStructs = scope.structs()

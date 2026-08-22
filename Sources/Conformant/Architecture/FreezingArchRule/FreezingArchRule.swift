@@ -104,8 +104,10 @@ public class FreezingArchRule: ArchitectureRule {
             updatedStoredViolations.append(StoredViolation(from: newViolation))
         }
         
-        // Save the updated violations list
-        let uniqueViolations = Array(Set(updatedStoredViolations))
+        // Save the updated violations list. Deduplicate through a Set, then sort
+        // so the persisted baseline has a stable order — a Set's iteration order
+        // varies between runs and would otherwise churn the committed file.
+        let uniqueViolations = Set(updatedStoredViolations).sortedForStorage()
         violationStore.saveViolations(uniqueViolations)
 
         // Replace the wrapped rule's violations with only the new ones

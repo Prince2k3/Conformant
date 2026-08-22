@@ -51,8 +51,19 @@ public class FileViolationStore: ViolationStore {
     
     public func saveViolations(_ violations: [StoredViolation]) {
         do {
-            let data = try JSONEncoder().encode(violations)
-            try data.write(to: URL(fileURLWithPath: filePath))
+            let url = URL(fileURLWithPath: filePath)
+
+            // A baseline file is meant to be committed, so create its directory
+            // if needed and write it in a stable, reviewable form.
+            let directory = url.deletingLastPathComponent()
+            if !FileManager.default.fileExists(atPath: directory.path) {
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            }
+
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            let data = try encoder.encode(violations.sortedForStorage())
+            try data.write(to: url, options: .atomic)
         } catch {
             print("Error saving violations: \(error)")
         }

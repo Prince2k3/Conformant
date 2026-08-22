@@ -33,10 +33,17 @@ class MemberCollector: SyntaxVisitor {
     var methods: [SwiftFunctionDeclaration] = []
     private let filePath: String
     private let converter: SourceLocationConverter
+    let diagnostics: DiagnosticSink
 
-    init(filePath: String, converter: SourceLocationConverter, viewMode: SyntaxTreeViewMode = .sourceAccurate) {
+    init(
+        filePath: String,
+        converter: SourceLocationConverter,
+        diagnostics: DiagnosticSink,
+        viewMode: SyntaxTreeViewMode = .sourceAccurate
+    ) {
         self.filePath = filePath
         self.converter = converter
+        self.diagnostics = diagnostics
         super.init(viewMode: viewMode)
     }
 
@@ -61,16 +68,7 @@ class MemberCollector: SyntaxVisitor {
         let returnType: String? = nil
         let body = node.body?.trimmedDescription
 
-        // Extract effect specifiers from initializer
-        let isAsync = node.signature.effectSpecifiers?.asyncSpecifier != nil
-        let isThrows = node.signature.effectSpecifiers?.throwsSpecifier != nil
-        let isRethrows = node.signature.effectSpecifiers?.throwsSpecifier?.text == "rethrows"
-
-        let effectSpecifiers = SwiftFunctionDeclaration.FunctionEffectSpecifiers(
-            isAsync: isAsync,
-            isThrowing: isThrows && !isRethrows,
-            isRethrows: isRethrows
-        )
+        let effectSpecifiers = extractEffectSpecifiers(from: node.signature)
 
         parameterList.forEach { param in
             let typeSyntax = Syntax(param.type)
@@ -335,7 +333,10 @@ class MemberCollector: SyntaxVisitor {
                         }
                     }
                 default:
-                    print("Unhandled attribute argument type: \(args.syntaxNodeType) for attribute \(name)")
+                    diagnostics.unsupported(
+                        "Arguments of @\(name) are not modelled (\(args.syntaxNodeType)); the attribute is recorded without them",
+                        at: getLocation(for: Syntax(attribute))
+                    )
                 }
             }
             annotations.append(SwiftAnnotation(name: name, arguments: arguments))
@@ -354,11 +355,5 @@ class MemberCollector: SyntaxVisitor {
 
     private func extractReturnType(from output: ReturnClauseSyntax?) -> String? {
         return output?.type.trimmedDescription
-    }
-}
-
-extension SyntaxProtocol {
-    var trimmedDescription: String {
-        return description.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

@@ -26,22 +26,14 @@
 import Foundation
 
 /// Represents a location in the source code
-public struct SourceLocation {
-    let file: String
-    let line: Int
-    let column: Int
-}
+public struct SourceLocation: Hashable, Sendable {
+    public let file: String
+    public let line: Int
+    public let column: Int
 
-extension SourceLocation: Hashable {
-    public static func == (lhs: SourceLocation, rhs: SourceLocation) -> Bool {
-        lhs.file == rhs.file &&
-        lhs.line == rhs.line &&
-        lhs.column == rhs.column
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(file)
-        hasher.combine(line)
-        hasher.combine(column)
+    public init(file: String, line: Int, column: Int) {
+        self.file = file
+        self.line = line
+        self.column = column
     }
 }

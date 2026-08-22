@@ -1,0 +1,50 @@
+fixture: NestedTypes.swift
+
+## imports (0)
+  <none>
+
+## classes (0)
+  <none>
+
+## structs (1)
+- Outer @1:1
+    protocols: []
+    modifiers: [public]
+    annotations: []
+    dependencies: [Inner/typeUsage@17:16, NetworkClient/typeUsage@13:25, UserRepository/typeUsage@3:25]
+    properties:
+      - repository: UserRepository @3:13
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [UserRepository/typeUsage@3:25]
+      - client: NetworkClient @13:17
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [NetworkClient/typeUsage@13:25]
+      - inner: Inner @17:9
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Inner/typeUsage@17:16]
+    methods:
+      <none>
+
+## enums (0)
+  <none>
+
+## protocols (0)
+  <none>
+
+## extensions (0)
+  <none>
+
+## top-level functions (0)
+  <none>
+
+## top-level properties (0)
+  <none>

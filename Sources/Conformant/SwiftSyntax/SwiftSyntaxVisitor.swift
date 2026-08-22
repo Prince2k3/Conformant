@@ -31,6 +31,7 @@ import SwiftParser
 class SwiftSyntaxVisitor: SyntaxVisitor {
     private let filePath: String
     private let converter: SourceLocationConverter
+    let diagnostics: DiagnosticSink
 
     private var imports: [SwiftImportDeclaration] = []
     private var classes: [SwiftClassDeclaration] = []
@@ -41,10 +42,10 @@ class SwiftSyntaxVisitor: SyntaxVisitor {
     private var topLevelProperties: [SwiftPropertyDeclaration] = []
     private var enums: [SwiftEnumDeclaration] = []
 
-    // Updated initializer
-    init(filePath: String, converter: SourceLocationConverter) {
+    init(filePath: String, converter: SourceLocationConverter, diagnostics: DiagnosticSink) {
         self.filePath = filePath
         self.converter = converter
+        self.diagnostics = diagnostics
         super.init(viewMode: .sourceAccurate)
     }
 
@@ -209,7 +210,7 @@ class SwiftSyntaxVisitor: SyntaxVisitor {
 
         var cases: [SwiftEnumDeclaration.EnumCase] = []
 
-        let memberVisitor = MemberCollector(filePath: filePath, converter: converter)
+        let memberVisitor = MemberCollector(filePath: filePath, converter: converter, diagnostics: diagnostics)
         memberVisitor.walk(node.memberBlock)
         memberVisitor.properties.forEach { currentDependencies.append(contentsOf: $0.dependencies) }
         memberVisitor.methods.forEach { currentDependencies.append(contentsOf: $0.dependencies) }
@@ -304,7 +305,7 @@ class SwiftSyntaxVisitor: SyntaxVisitor {
             }
         }
 
-        let memberVisitor = MemberCollector(filePath: filePath, converter: converter)
+        let memberVisitor = MemberCollector(filePath: filePath, converter: converter, diagnostics: diagnostics)
         memberVisitor.walk(node.memberBlock)
         memberVisitor.properties.forEach { currentDependencies.append(contentsOf: $0.dependencies) }
         memberVisitor.methods.forEach { currentDependencies.append(contentsOf: $0.dependencies) }
@@ -349,7 +350,7 @@ class SwiftSyntaxVisitor: SyntaxVisitor {
             }
         }
 
-        let memberVisitor = MemberCollector(filePath: filePath, converter: converter)
+        let memberVisitor = MemberCollector(filePath: filePath, converter: converter, diagnostics: diagnostics)
         memberVisitor.walk(node.memberBlock)
         memberVisitor.properties.forEach { currentDependencies.append(contentsOf: $0.dependencies) }
         memberVisitor.methods.forEach { currentDependencies.append(contentsOf: $0.dependencies) }
@@ -394,7 +395,7 @@ class SwiftSyntaxVisitor: SyntaxVisitor {
             }
         }
 
-        let memberVisitor = MemberCollector(filePath: filePath, converter: converter)
+        let memberVisitor = MemberCollector(filePath: filePath, converter: converter, diagnostics: diagnostics)
         memberVisitor.walk(node.memberBlock)
         memberVisitor.properties.forEach { currentDependencies.append(contentsOf: $0.dependencies) }
         memberVisitor.methods.forEach { currentDependencies.append(contentsOf: $0.dependencies) }
@@ -449,7 +450,7 @@ class SwiftSyntaxVisitor: SyntaxVisitor {
             )
         }
 
-        let memberVisitor = MemberCollector(filePath: filePath, converter: converter)
+        let memberVisitor = MemberCollector(filePath: filePath, converter: converter, diagnostics: diagnostics)
         memberVisitor.walk(node.memberBlock)
         memberVisitor.properties.forEach { currentDependencies.append(contentsOf: $0.dependencies) }
         memberVisitor.methods.forEach { currentDependencies.append(contentsOf: $0.dependencies) }
@@ -708,7 +709,10 @@ class SwiftSyntaxVisitor: SyntaxVisitor {
                         }
                     }
                 default:
-                    print("Unhandled attribute argument type: \(args.syntaxNodeType) for attribute \(name)")
+                    diagnostics.unsupported(
+                        "Arguments of @\(name) are not modelled (\(args.syntaxNodeType)); the attribute is recorded without them",
+                        at: getLocation(for: Syntax(attribute))
+                    )
                 }
             }
             annotations.append(SwiftAnnotation(name: name, arguments: arguments))
@@ -737,7 +741,8 @@ class SwiftSyntaxVisitor: SyntaxVisitor {
             extensions: extensions,
             functions: topLevelFunctions,
             properties: topLevelProperties,
-            enums: enums
+            enums: enums,
+            diagnostics: diagnostics.diagnostics
         )
     }
 }

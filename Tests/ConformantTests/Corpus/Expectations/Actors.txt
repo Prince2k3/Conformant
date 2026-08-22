@@ -1,0 +1,25 @@
+fixture: Actors.swift
+
+## imports (0)
+  <none>
+
+## classes (0)
+  <none>
+
+## structs (0)
+  <none>
+
+## enums (0)
+  <none>
+
+## protocols (0)
+  <none>
+
+## extensions (0)
+  <none>
+
+## top-level functions (0)
+  <none>
+
+## top-level properties (0)
+  <none>

@@ -27,13 +27,15 @@ import Foundation
 
 /// Context provided to architecture rules for checking
 public struct ArchitectureRuleContext {
-    let scope: Conformant
+    /// The scope the declarations came from, when they came from one. `nil` when rules
+    /// are run against a hand-assembled collection of declarations.
+    let scope: Conformant?
     let declarations: [any SwiftDeclaration]
     let layers: [Layer]
 
     private var typeToLayerCache: [String: Layer?] = [:]
 
-    init(scope: Conformant, declarations: [any SwiftDeclaration], layers: [Layer]) {
+    init(scope: Conformant?, declarations: [any SwiftDeclaration], layers: [Layer]) {
         self.scope = scope
         self.declarations = declarations
         self.layers = layers

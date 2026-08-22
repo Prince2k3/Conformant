@@ -27,8 +27,18 @@ import Foundation
 
 /// Represents a violation of an architecture rule
 public struct ArchitectureViolation {
-    let sourceDeclaration: any SwiftDeclaration
-    let dependency: SwiftDependency
-    let ruleDescription: String
-    let detail: String
+    public let sourceDeclaration: any SwiftDeclaration
+    public let dependency: SwiftDependency
+    public let ruleDescription: String
+    public let detail: String
+
+    public init(sourceDeclaration: any SwiftDeclaration,
+                dependency: SwiftDependency,
+                ruleDescription: String,
+                detail: String) {
+        self.sourceDeclaration = sourceDeclaration
+        self.dependency = dependency
+        self.ruleDescription = ruleDescription
+        self.detail = detail
+    }
 }

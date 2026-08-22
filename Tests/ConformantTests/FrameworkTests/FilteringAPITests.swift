@@ -4,13 +4,13 @@ import SwiftSyntax
 import SwiftParser
 
 final class FilteringAPITests: XCTestCase {
-    func testNameFiltering() {
+    func testNameFiltering() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         // Test withNameSuffix
         let viewControllers: [SwiftClassDeclaration] = scope.classes().withNameEnding(with: "ViewController")
@@ -50,13 +50,13 @@ final class FilteringAPITests: XCTestCase {
     
     // MARK: - Modifier Filtering Tests
     
-    func testModifierFiltering() {
+    func testModifierFiltering() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         // Test withModifier
         let publicDeclarations = scope.declarations().withModifier(.public)
@@ -92,13 +92,13 @@ final class FilteringAPITests: XCTestCase {
     
     // MARK: - Annotation Filtering Tests
     
-    func testAnnotationFiltering() {
+    func testAnnotationFiltering() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         // Test withAnnotation
         let availableDeclarations = scope.declarations().withAnnotation(named: "available")
@@ -117,13 +117,13 @@ final class FilteringAPITests: XCTestCase {
     
     // MARK: - Location Filtering Tests
     
-    func testLocationFiltering() {
+    func testLocationFiltering() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         // Test inFile
         let classesFilePath = testFilesDirectory + "/Classes.swift"
@@ -147,13 +147,13 @@ final class FilteringAPITests: XCTestCase {
     
     // MARK: - Class-Specific Filtering Tests
     
-    func testClassSpecificFiltering() {
+    func testClassSpecificFiltering() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let classes = scope.classes()
         
         // Test extending
@@ -195,13 +195,13 @@ final class FilteringAPITests: XCTestCase {
     
     // MARK: - Struct-Specific Filtering Tests
     
-    func testStructSpecificFiltering() {
+    func testStructSpecificFiltering() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let structs = scope.structs()
         
         // Test implementing
@@ -238,13 +238,13 @@ final class FilteringAPITests: XCTestCase {
     
     // MARK: - Protocol-Specific Filtering Tests
     
-    func testProtocolSpecificFiltering() {
+    func testProtocolSpecificFiltering() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let protocols = scope.protocols()
         
         // Test inheriting
@@ -271,13 +271,13 @@ final class FilteringAPITests: XCTestCase {
     
     // MARK: - Function-Specific Filtering Tests
     
-    func testFunctionSpecificFiltering() {
+    func testFunctionSpecificFiltering() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let functions = scope.functions()
         
         // Test returningType
@@ -331,13 +331,13 @@ final class FilteringAPITests: XCTestCase {
     
     // MARK: - Property-Specific Filtering Tests
     
-    func testPropertySpecificFiltering() {
+    func testPropertySpecificFiltering() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         // Get properties from the Product struct
         let productProperties = scope.structs()
@@ -386,13 +386,13 @@ final class FilteringAPITests: XCTestCase {
     
     // MARK: - Enum-Specific Filtering Tests
     
-    func testEnumSpecificFiltering() {
+    func testEnumSpecificFiltering() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let enums = scope.enums()
         
         // Test implementing
@@ -433,13 +433,13 @@ final class FilteringAPITests: XCTestCase {
     
     // MARK: - Import-Specific Filtering Tests
     
-    func testImportSpecificFiltering() {
+    func testImportSpecificFiltering() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let imports = scope.imports()
         
         // Test ofModule
@@ -480,13 +480,13 @@ final class FilteringAPITests: XCTestCase {
     
     // MARK: - Composite Filtering Tests
     
-    func testCompositeFiltering() {
+    func testCompositeFiltering() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         // Test chaining different filters
         let publicFinalClasses = scope.classes()
@@ -528,13 +528,13 @@ final class FilteringAPITests: XCTestCase {
     
     // MARK: - Edge Case Tests
     
-    func testEdgeCases() {
+    func testEdgeCases() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         // Test empty collections
         let nonExistentPrefixClasses = scope.classes().withNameStarting(with: "NonExistent")

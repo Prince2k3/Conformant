@@ -1,0 +1,62 @@
+fixture: Functions.swift
+
+## imports (1)
+- Foundation @1:1
+    kind: regular
+    fullPath: Foundation
+    submodules: []
+    modifiers: []
+    annotations: []
+    dependencies: []
+
+## classes (0)
+  <none>
+
+## structs (0)
+  <none>
+
+## enums (0)
+  <none>
+
+## protocols (0)
+  <none>
+
+## extensions (0)
+  <none>
+
+## top-level functions (4)
+- topLevel @3:1
+    parameters: [a: Int, named: String = "x", c: Data]
+    returns: Result<User, NetworkError>
+    effects: async=false throws=false rethrows=false
+    hasBody: true
+    modifiers: [public]
+    annotations: []
+    dependencies: [Data/typeUsage@3:58, Int/typeUsage@3:25, NetworkError/typeUsage@3:64, Result/typeUsage@3:64, String/typeUsage@3:39, User/typeUsage@3:64]
+- asyncThrowing @7:1
+    parameters: []
+    returns: Void
+    effects: async=true throws=true rethrows=false
+    hasBody: true
+    modifiers: []
+    annotations: []
+    dependencies: [Void/typeUsage@7:35]
+- rethrowing @9:1
+    parameters: [body: () throws -> Void]
+    returns: <none>
+    effects: async=false throws=false rethrows=true
+    hasBody: true
+    modifiers: []
+    annotations: []
+    dependencies: [Void/typeUsage@9:25]
+- annotated @11:1
+    parameters: [value: T]
+    returns: T
+    effects: async=false throws=false rethrows=false
+    hasBody: true
+    modifiers: []
+    annotations: [@discardableResult, @inlinable]
+    dependencies: [T/typeUsage@13:38, T/typeUsage@13:41]
+
+## top-level properties (0)
+  <none>

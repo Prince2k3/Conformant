@@ -4,13 +4,13 @@ import SwiftParser
 @testable import Conformant
 
 final class AssertionsXCTestTests: XCTestCase {
-    func testAssertTrue() {
+    func testAssertTrue() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let goodViewModels = scope.classes().filter {
             $0.name == "UserViewModel" || $0.name == "ProductViewModel" 
         }
@@ -32,13 +32,13 @@ final class AssertionsXCTestTests: XCTestCase {
         }
     }
     
-    func testAssertFalse() {
+    func testAssertFalse() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
         let allViewModels = scope.classes().filter { $0.name.hasSuffix("ViewModel") }
 
         allViewModels.assertFalse(message: "No ViewModel should have Controller in its name") {
@@ -60,13 +60,13 @@ final class AssertionsXCTestTests: XCTestCase {
         }
     }
     
-    func testAssertionsWithComplexPredicates() {
+    func testAssertionsWithComplexPredicates() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
 
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         let allViewModels = scope.classes().filter { $0.name.hasSuffix("ViewModel") }
 
@@ -102,13 +102,13 @@ final class AssertionsXCTestTests: XCTestCase {
         XCTAssertTrue(goodComplexPredicate, "All good ViewModels should satisfy complex predicate")
     }
     
-    func testCombiningAssertions() {
+    func testCombiningAssertions() throws {
         let testFilesDirectory = makeSUT()
         defer {
             cleanup(testFilesDirectory)
         }
         
-        let scope = Conformant.scopeFromDirectory(testFilesDirectory)
+        let scope = try Conformant.scope(directory: testFilesDirectory)
 
         let allClasses = scope.classes()
         let allStructs = scope.structs()

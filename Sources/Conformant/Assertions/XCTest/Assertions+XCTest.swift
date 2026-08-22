@@ -53,40 +53,69 @@ extension Collection where Element: SwiftDeclaration {
         XCTAssertTrue(self.assertNotEmpty(), message, file: file, line: line)
     }
 
-    /// Run architecture rules as test assertions
-    /// - Parameter defineRules: Block that defines architecture rules to validate
-    /// - Returns: Whether all rules passed
+    /// Runs architecture rules against the declarations in this collection, reporting
+    /// each violation through `XCTFail`.
+    ///
+    /// - Returns: Whether all rules passed.
+    @discardableResult
     public func assertArchitecture(_ defineRules: (ArchitectureRules) -> Void,
-                            file: StaticString = #filePath,
-                            line: UInt = #line) -> Bool {
+                                   file: StaticString = #filePath,
+                                   line: UInt = #line) -> Bool {
+        guard !isEmpty else {
+            XCTFail(
+                "Conformant: assertArchitecture was called on an empty collection. Every "
+                + "rule passes against no declarations, so this is reported as a failure "
+                + "rather than a pass.",
+                file: file, line: line
+            )
+            return false
+        }
+
         let ruleSet = ArchitectureRules()
         defineRules(ruleSet)
 
-        let spec = Conformant.scopeFromProject()
         var context = ArchitectureRuleContext(
-            scope: spec,
-            declarations: spec.declarations(),
-            layers: Array(ruleSet.layers.values)
+            scope: nil,
+            declarations: Array(self),
+            layers: ruleSet.layers
         )
 
         var allPassed = true
-        for rule in ruleSet.rules {
-            if !rule.check(context: &context) {
-                allPassed = false
+        for rule in ruleSet.rules where !rule.check(context: &context) {
+            allPassed = false
 
-                for violation in rule.violations {
-                    let message = """
-                    Rule Failed: \(rule.ruleDescription)
-                    Violation: \(violation.detail)
-                    In: \(violation.sourceDeclaration.name)
-                    At: \(violation.sourceDeclaration.filePath):\(violation.sourceDeclaration.location.line)
-                    """
-                    XCTFail(message, file: file, line: line)
-                }
+            for violation in rule.violations {
+                let message = """
+                Rule Failed: \(rule.ruleDescription)
+                Violation: \(violation.detail)
+                In: \(violation.sourceDeclaration.name)
+                At: \(violation.sourceDeclaration.filePath):\(violation.sourceDeclaration.location.line)
+                """
+                XCTFail(message, file: file, line: line)
             }
         }
 
         return allPassed
+    }
+}
+
+extension Conformant {
+    /// Evaluates architecture rules and reports every failure through `XCTFail`.
+    ///
+    /// Unlike ``Conformant/assertArchitecture(_:)``, which hands the outcome back as a
+    /// `Bool` for the caller to inspect, this fails the current test directly — including
+    /// when the scope is empty or holds files that did not parse.
+    ///
+    /// - Returns: Whether the scope was usable and all rules passed.
+    @discardableResult
+    public func verifyArchitecture(_ defineRules: (ArchitectureRules) -> Void,
+                                   file: StaticString = #filePath,
+                                   line: UInt = #line) -> Bool {
+        let result = checkArchitecture(defineRules)
+        for message in result.messages {
+            XCTFail(message, file: file, line: line)
+        }
+        return result.passed
     }
 }
 #endif

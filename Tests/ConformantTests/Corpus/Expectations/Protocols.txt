@@ -1,0 +1,68 @@
+fixture: Protocols.swift
+
+## imports (0)
+  <none>
+
+## classes (0)
+  <none>
+
+## structs (0)
+  <none>
+
+## enums (0)
+  <none>
+
+## protocols (2)
+- Repository @1:1
+    inherits: [AnyObject, Sendable]
+    modifiers: [public]
+    annotations: []
+    dependencies: [AnyObject/conformance@1:29, Identifier/typeUsage@8:21, Int/typeUsage@5:16, Item/typeUsage@8:46, Item/typeUsage@9:23, Sendable/conformance@1:40, String/typeUsage@6:15]
+    properties:
+      - count: Int @5:9
+          computed: true
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Int/typeUsage@5:16]
+      - name: String @6:9
+          computed: true
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [String/typeUsage@6:15]
+    methods:
+      - load @8:5
+          parameters: [id: Identifier]
+          returns: Item
+          effects: async=true throws=true rethrows=false
+          hasBody: false
+          modifiers: []
+          annotations: []
+          dependencies: [Identifier/typeUsage@8:21, Item/typeUsage@8:46]
+      - save @9:5
+          parameters: [item: Item]
+          returns: <none>
+          effects: async=false throws=true rethrows=false
+          hasBody: false
+          modifiers: []
+          annotations: []
+          dependencies: [Item/typeUsage@9:23]
+- Marker @12:1
+    inherits: []
+    modifiers: []
+    annotations: []
+    dependencies: []
+    properties:
+      <none>
+    methods:
+      <none>
+
+## extensions (0)
+  <none>
+
+## top-level functions (0)
+  <none>
+
+## top-level properties (0)
+  <none>

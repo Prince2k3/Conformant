@@ -51,7 +51,7 @@ extension PackageFile {
 
     /// Represents a product defined in the package
     public struct Product {
-        public enum ProductType {
+        public enum ProductType: Equatable {
             case library(LibraryType)
             case executable
 

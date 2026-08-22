@@ -1,0 +1,41 @@
+fixture: BodyUsage.swift
+
+## imports (0)
+  <none>
+
+## classes (1)
+- Controller @1:1
+    superclass: <none>
+    protocols: []
+    modifiers: [final]
+    annotations: []
+    dependencies: []
+    properties:
+      <none>
+    methods:
+      - run @2:5
+          parameters: []
+          returns: <none>
+          effects: async=false throws=false rethrows=false
+          hasBody: true
+          modifiers: []
+          annotations: []
+          dependencies: []
+
+## structs (0)
+  <none>
+
+## enums (0)
+  <none>
+
+## protocols (0)
+  <none>
+
+## extensions (0)
+  <none>
+
+## top-level functions (0)
+  <none>
+
+## top-level properties (0)
+  <none>

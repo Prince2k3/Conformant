@@ -1,0 +1,86 @@
+fixture: Attributes.swift
+
+## imports (0)
+  <none>
+
+## classes (1)
+- Modern @1:1
+    superclass: NSObject
+    protocols: [@unchecked Sendable]
+    modifiers: [public, final]
+    annotations: [@available(iOS: 17.0, macOS: 14.0), @MainActor]
+    dependencies: [Int/typeUsage@4:33, NSObject/inheritance@3:28, Sendable/conformance@3:38]
+    properties:
+      - observed: Int @4:23
+          computed: false
+          initialValue: 0
+          modifiers: []
+          annotations: [@objc]
+          dependencies: [Int/typeUsage@4:33]
+    methods:
+      <none>
+
+## structs (2)
+- Clamped @7:1
+    protocols: []
+    modifiers: []
+    annotations: [@propertyWrapper]
+    dependencies: [Int/typeUsage@9:23]
+    properties:
+      - wrappedValue: Int @9:9
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Int/typeUsage@9:23]
+    methods:
+      <none>
+- App @17:1
+    protocols: []
+    modifiers: []
+    annotations: [@main]
+    dependencies: []
+    properties:
+      <none>
+    methods:
+      - main @19:5
+          parameters: []
+          returns: <none>
+          effects: async=false throws=false rethrows=false
+          hasBody: true
+          modifiers: [static]
+          annotations: []
+          dependencies: []
+
+## enums (1)
+- ViewBuilder2 @12:1
+    rawType: <none>
+    protocols: []
+    modifiers: []
+    annotations: [@resultBuilder]
+    dependencies: [Component/typeUsage@14:37, Component/typeUsage@14:51]
+    cases:
+      <none>
+    properties:
+      <none>
+    methods:
+      - buildBlock @14:5
+          parameters: [parts: Component]
+          returns: Component
+          effects: async=false throws=false rethrows=false
+          hasBody: true
+          modifiers: [static]
+          annotations: []
+          dependencies: [Component/typeUsage@14:37, Component/typeUsage@14:51]
+
+## protocols (0)
+  <none>
+
+## extensions (0)
+  <none>
+
+## top-level functions (0)
+  <none>
+
+## top-level properties (0)
+  <none>

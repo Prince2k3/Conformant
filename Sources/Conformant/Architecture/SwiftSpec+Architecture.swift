@@ -23,31 +23,68 @@
 //  SOFTWARE.
 //
 
+
 import Foundation
 
 /// Extension to add architecture verification to SwiftScope
 extension Conformant {
-    public func assertArchitecture(_ defineRules: (ArchitectureRules) -> Void) -> Bool {
+    /// Evaluates architecture rules and returns every failure it found.
+    ///
+    /// The scope is validated before any rule runs: an empty scope, or one holding files
+    /// that failed to parse, is reported as a scope problem rather than as a pass. Rules
+    /// only ever *look* satisfied against declarations that were never read.
+    public func checkArchitecture(_ defineRules: (ArchitectureRules) -> Void) -> ArchitectureCheckResult {
+        var scopeProblems: [String] = []
+
+        if isEmpty {
+            scopeProblems.append(
+                "Conformant: the scope contains no Swift files. Every architecture rule "
+                + "passes against an empty scope, so this is reported as a failure rather "
+                + "than a pass. Check the path the scope was built from."
+            )
+        }
+
+        let errors = diagnostics.errors
+        if !errors.isEmpty {
+            scopeProblems.append(
+                "Conformant: \(errors.count) file(s) in the scope failed to parse. "
+                + "Declarations in them are missing, so rule results are incomplete.\n"
+                + errors.summary()
+            )
+        }
+
+        guard scopeProblems.isEmpty else {
+            return ArchitectureCheckResult(scopeProblems: scopeProblems, violations: [])
+        }
+
         let ruleSet = ArchitectureRules()
         defineRules(ruleSet)
 
         var context = ArchitectureRuleContext(
             scope: self,
             declarations: self.declarations(),
-            layers: Array(ruleSet.layers.values)
+            layers: ruleSet.layers
         )
 
-        var allPassed = true
-        for rule in ruleSet.rules {
-            if !rule.check(context: &context) {
-                allPassed = false
-
-                print("Rule Failed: \(rule.ruleDescription)")
-                for violation in rule.violations {
-                    print("  \(violation.detail) in \(violation.sourceDeclaration.name) at \(violation.sourceDeclaration.filePath):\(violation.sourceDeclaration.location.line)")
-                }
+        var violations: [String] = []
+        for rule in ruleSet.rules where !rule.check(context: &context) {
+            for violation in rule.violations {
+                violations.append("""
+                Rule Failed: \(rule.ruleDescription)
+                Violation: \(violation.detail)
+                In: \(violation.sourceDeclaration.name)
+                At: \(violation.sourceDeclaration.filePath):\(violation.sourceDeclaration.location.line)
+                """)
             }
         }
-        return allPassed
+
+        return ArchitectureCheckResult(scopeProblems: [], violations: violations)
     }
-} 
+
+    /// Evaluates architecture rules and reports whether all of them held.
+    ///
+    /// Use ``checkArchitecture(_:)`` when the failure detail matters.
+    public func assertArchitecture(_ defineRules: (ArchitectureRules) -> Void) -> Bool {
+        checkArchitecture(defineRules).passed
+    }
+}

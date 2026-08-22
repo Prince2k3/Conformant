@@ -27,7 +27,7 @@ import Foundation
 
 /// Represents a layer in the architecture
 public struct Layer {
-    let name: String
+    public let name: String
     let resideIn: (any SwiftDeclaration) -> Bool
 
     // A set of module names that are considered part of this layer

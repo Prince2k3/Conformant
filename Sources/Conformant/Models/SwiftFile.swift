@@ -27,15 +27,25 @@ import Foundation
 
 /// Represents a Swift source file
 public struct SwiftFile {
-    let path: String
-    let imports: [SwiftImportDeclaration]
-    let classes: [SwiftClassDeclaration]
-    let structs: [SwiftStructDeclaration]
-    let protocols: [SwiftProtocolDeclaration]
-    let extensions: [SwiftExtensionDeclaration]
-    let functions: [SwiftFunctionDeclaration]
-    let properties: [SwiftPropertyDeclaration]
-    let enums: [SwiftEnumDeclaration]
+    public let path: String
+    public let imports: [SwiftImportDeclaration]
+    public let classes: [SwiftClassDeclaration]
+    public let structs: [SwiftStructDeclaration]
+    public let protocols: [SwiftProtocolDeclaration]
+    public let extensions: [SwiftExtensionDeclaration]
+    public let functions: [SwiftFunctionDeclaration]
+    public let properties: [SwiftPropertyDeclaration]
+    public let enums: [SwiftEnumDeclaration]
+
+    /// Problems found while reading this file: syntax errors reported by the parser, and
+    /// constructs the extractor could not fully represent. Empty for a clean file.
+    public let diagnostics: [ParseDiagnostic]
+
+    /// True when the file is not valid Swift. Declarations extracted from such a file are
+    /// partial, so any rule evaluated against them is unsound.
+    public var hasSyntaxErrors: Bool {
+        diagnostics.contains { $0.severity == .error }
+    }
 
     var internalDependencies: [SwiftDependency] {
         var deps: [SwiftDependency] = []

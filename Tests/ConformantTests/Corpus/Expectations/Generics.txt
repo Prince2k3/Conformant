@@ -1,0 +1,107 @@
+fixture: Generics.swift
+
+## imports (0)
+  <none>
+
+## classes (0)
+  <none>
+
+## structs (2)
+- Box @1:1
+    protocols: []
+    modifiers: [public]
+    annotations: []
+    dependencies: [CacheEntry/typeUsage@3:16, Dictionary/typeUsage@3:16, Element/typeUsage@2:16, Left/typeUsage@5:23, Request/typeUsage@4:20, Response/typeUsage@4:20, Right/typeUsage@5:23, String/typeUsage@3:16]
+    properties:
+      - value: Element @2:9
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Element/typeUsage@2:16]
+      - store: Dictionary<String, [CacheEntry]> @3:9
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [CacheEntry/typeUsage@3:16, Dictionary/typeUsage@3:16, String/typeUsage@3:16]
+      - transform: (Request) throws -> Response @4:9
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Request/typeUsage@4:20, Response/typeUsage@4:20]
+      - optionalPair: (first: Left, second: Right)? @5:9
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Left/typeUsage@5:23, Right/typeUsage@5:23]
+    methods:
+      <none>
+- Qualified @12:1
+    protocols: []
+    modifiers: []
+    annotations: []
+    dependencies: [CChar/typeUsage@18:12, Deep/typeUsage@14:12, Equatable/typeUsage@16:12, Int/typeUsage@13:12, Int/typeUsage@17:12, MyModule/typeUsage@14:12, Nested/typeUsage@14:12, Sendable/typeUsage@15:12, String/typeUsage@17:12, Swift/typeUsage@13:12, Type1/typeUsage@14:12, UnsafePointer/typeUsage@18:12, UserProfile/typeUsage@17:12]
+    properties:
+      - a: Swift.Int @13:9
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Int/typeUsage@13:12, Swift/typeUsage@13:12]
+      - b: MyModule.Deep.Nested.Type1 @14:9
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Deep/typeUsage@14:12, MyModule/typeUsage@14:12, Nested/typeUsage@14:12, Type1/typeUsage@14:12]
+      - c: any Sendable @15:9
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Sendable/typeUsage@15:12]
+      - d: some Equatable @16:9
+          computed: false
+          initialValue: 1
+          modifiers: []
+          annotations: []
+          dependencies: [Equatable/typeUsage@16:12]
+      - e: [Int: [String: UserProfile]] @17:9
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Int/typeUsage@17:12, String/typeUsage@17:12, UserProfile/typeUsage@17:12]
+      - f: UnsafePointer<CChar>? @18:9
+          computed: false
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [CChar/typeUsage@18:12, UnsafePointer/typeUsage@18:12]
+    methods:
+      <none>
+
+## enums (0)
+  <none>
+
+## protocols (0)
+  <none>
+
+## extensions (0)
+  <none>
+
+## top-level functions (1)
+- constrained @8:1
+    parameters: [input: T]
+    returns: T
+    effects: async=false throws=false rethrows=false
+    hasBody: true
+    modifiers: []
+    annotations: []
+    dependencies: [T/typeUsage@8:30, T/typeUsage@8:33]
+
+## top-level properties (0)
+  <none>

@@ -1,0 +1,70 @@
+fixture: Enums.swift
+
+## imports (0)
+  <none>
+
+## classes (0)
+  <none>
+
+## structs (0)
+  <none>
+
+## enums (3)
+- HTTPStatus @1:1
+    rawType: Int
+    protocols: [Codable]
+    modifiers: [public]
+    annotations: []
+    dependencies: [Codable/conformance@1:30, Int/typeUsage@1:25]
+    cases:
+      - ok = 200
+      - notFound = 404
+    properties:
+      <none>
+    methods:
+      <none>
+- LoadState @6:1
+    rawType: <none>
+    protocols: []
+    modifiers: []
+    annotations: []
+    dependencies: [Bool/typeUsage@12:21, Double/typeUsage@8:28, ETag/typeUsage@9:23, NetworkError/typeUsage@10:17, User/typeUsage@9:17]
+    cases:
+      - idle
+      - loading(Double)
+      - loaded(User, ETag)
+      - failed(NetworkError)
+    properties:
+      - isTerminal: Bool @12:9
+          computed: true
+          initialValue: <none>
+          modifiers: []
+          annotations: []
+          dependencies: [Bool/typeUsage@12:21]
+    methods:
+      <none>
+- Expression @20:1
+    rawType: <none>
+    protocols: []
+    modifiers: []
+    annotations: []
+    dependencies: [Expression/typeUsage@22:14, Expression/typeUsage@22:26, Int/typeUsage@21:18]
+    cases:
+      - literal(Int)
+      - add(Expression, Expression)
+    properties:
+      <none>
+    methods:
+      <none>
+
+## protocols (0)
+  <none>
+
+## extensions (0)
+  <none>
+
+## top-level functions (0)
+  <none>
+
+## top-level properties (0)
+  <none>
